@@ -6,17 +6,30 @@ const neu=`// ROAD OPS独自定義: 広島岩国道路は廿日市IC〜廿日市
 if(!s.includes(old)) throw new Error('target patch block not found');
 s=s.replace(old,neu);
 
-// 全道路のKPラベルを常時対象にする。縮尺ごとの間引き(step/showK)は既存仕様を維持。
+// 表示対象は中国道・山陽道・広島岩国道路・広島道の4路線だけ。
+const dataAnchor="if(!DATA.chugoku||DATA.chugoku.marks.length<2)throw Error('中国道KP固定データの生成に失敗しました');";
+const keep=`const KEEP=new Set(['chugoku','sanyo','hiroshima_iwakuni','hiroshima']);for(const k of Object.keys(DATA))if(!KEEP.has(k))delete DATA[k];\n`;
+if(!s.includes(dataAnchor)) throw new Error('DATA filter anchor not found');
+s=s.replace(dataAnchor,keep+dataAnchor);
+
+// 全4路線のKPラベルを常時対象にする。道路選択には依存させない。
 const oldKeys="keys=[...new Set(['sanyo','chugoku',r.value])]";
 const newKeys="keys=Object.keys(D)";
 if(!s.includes(oldKeys)) throw new Error('KP label selection block not found');
 s=s.replace(oldKeys,newKeys);
 
+// 広域表示だけ5kmから10kmへ。その他の縮尺は既存仕様を維持。
+const oldStep="function step(){let z=map.getZoom();return z>=15?.1:z>=13?.5:z>=11?1:5}";
+const newStep="function step(){let z=map.getZoom();return z>=15?.1:z>=13?.5:z>=11?1:10}";
+if(!s.includes(oldStep)) throw new Error('zoom density block not found');
+s=s.replace(oldStep,newStep);
+
 const oldCount="kc.textContent=(D.sanyo?.marks?.length||0)+(D.chugoku?.marks?.length||0);msg.textContent='山陽道・中国道KP：広域=5.0km / 1.0km / 0.5km / 0.1km ・ 表示 '+n+'件'";
-const newCount="kc.textContent=Object.values(D).reduce((a,v)=>a+(v.marks?.length||0),0);msg.textContent='全道路KP：広域=5.0km / 1.0km / 0.5km / 0.1km ・ 表示 '+n+'件'";
+const newCount="kc.textContent=Object.values(D).reduce((a,v)=>a+(v.marks?.length||0),0);msg.textContent='4路線KP：広域=10km / 1.0km / 0.5km / 0.1km ・ 表示 '+n+'件'";
 if(!s.includes(oldCount)) throw new Error('KP count/message block not found');
 s=s.replace(oldCount,newCount);
 
 fs.writeFileSync(p,s);
 console.log('Applied ROAD OPS Hiroshima-Iwakuni definition: Hatsukaichi IC-JCT only');
-console.log('Applied persistent KP labels for all roads with existing zoom density rules');
+console.log('Limited map to Chugoku, Sanyo, Hiroshima-Iwakuni and Hiroshima routes');
+console.log('Applied persistent KP labels for 4 routes; wide zoom density = 10km');
