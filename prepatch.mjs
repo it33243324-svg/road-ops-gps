@@ -14,9 +14,9 @@ if(!s.includes(oldKeys)) throw new Error('KP label selection block not found');
 s=s.replace(oldKeys,"keys=Object.keys(D)");
 const oldStep="function step(){let z=map.getZoom();return z>=15?.1:z>=13?.5:z>=11?1:5}";
 if(!s.includes(oldStep)) throw new Error('zoom density block not found');
-s=s.replace(oldStep,"function step(){let z=map.getZoom();return z>=15?.1:z>=13?.5:z>=11?1:10}");
+s=s.replace(oldStep,"function step(){let z=map.getZoom();return z>=15?.1:z>=13?.5:z>=12?1:z>=11?2:z>=10?5:10}");
 const oldCount="kc.textContent=(D.sanyo?.marks?.length||0)+(D.chugoku?.marks?.length||0);msg.textContent='山陽道・中国道KP：広域=5.0km / 1.0km / 0.5km / 0.1km ・ 表示 '+n+'件'";
-const newCount="kc.textContent=Object.values(D).reduce((a,v)=>a+(v.marks?.length||0),0);msg.textContent='4路線KP：広域=10km / 1.0km / 0.5km / 0.1km ・ 表示 '+n+'件'";
+const newCount="kc.textContent=Object.values(D).reduce((a,v)=>a+(v.marks?.length||0),0);msg.textContent='4路線KP：広域=10km / 5km / 2km / 1.0km / 0.5km / 0.1km ・ 表示 '+n+'件'";
 if(!s.includes(oldCount)) throw new Error('KP count/message block not found');
 s=s.replace(oldCount,newCount);
 const oldHtml="html='<div class=\"kpmark '+side+' '+rank+'\"><span class=\"kpstem\"></span><span class=\"kplabel\"><b>'+x[0].toFixed(1)+'</b><small>KP</small></span></div>'";
@@ -39,11 +39,13 @@ const varsNew="r=$('r'),q=$('q'),go=$('go'),loc=$('loc'),legend=$('legend'),kc=$
 if(!s.includes(vars)) throw new Error('button vars block not found');
 s=s.replace(vars,varsNew);
 if(!s.includes("all.onclick=()=>map.fitBounds(B);")) throw new Error('region button handler not found');
-s=s.replace("all.onclick=()=>map.fitBounds(B);",`loc.onclick=()=>{if(!navigator.geolocation){msg.textContent='この端末では現在地を取得できません';return}loc.disabled=true;loc.textContent='取得中…';navigator.geolocation.getCurrentPosition(p=>{loc.disabled=false;loc.textContent='現在地';const a=[p.coords.latitude,p.coords.longitude];here.clearLayers();L.circleMarker(a,{radius:8,color:'#fff',weight:3,fillColor:'#2385ff',fillOpacity:1}).addTo(here);if(Number.isFinite(p.coords.accuracy))L.circle(a,{radius:p.coords.accuracy,color:'#2385ff',weight:1,fillOpacity:.08,interactive:false}).addTo(here);map.setView(a,Math.max(map.getZoom(),15));msg.textContent='現在地を表示しました（精度 約'+Math.round(p.coords.accuracy)+'m）';labels()},e=>{loc.disabled=false;loc.textContent='現在地';msg.textContent=e.code===1?'位置情報の使用が許可されていません':'現在地を取得できません'}, {enableHighAccuracy:true,maximumAge:5000,timeout:15000})};`);
+// Design 2 medium: directional marker, sized between the previous Design 1 and 2.
+s=s.replace("all.onclick=()=>map.fitBounds(B);",`loc.onclick=()=>{if(!navigator.geolocation){msg.textContent='この端末では現在地を取得できません';return}loc.disabled=true;loc.textContent='取得中…';navigator.geolocation.getCurrentPosition(p=>{loc.disabled=false;loc.textContent='現在地';const a=[p.coords.latitude,p.coords.longitude],h=Number.isFinite(p.coords.heading)?p.coords.heading:0;here.clearLayers();const icon=L.divIcon({className:'',iconSize:[52,52],iconAnchor:[26,26],html:'<div style="width:52px;height:52px;position:relative;filter:drop-shadow(0 2px 4px #00101888);transform:rotate('+h+'deg)"><div style="position:absolute;left:20px;top:0;width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-bottom:20px solid #2385ff"></div><div style="position:absolute;left:12px;top:15px;width:24px;height:24px;border-radius:50%;background:#2385ff;border:4px solid white;box-shadow:0 0 0 2px #2385ff55"></div></div>'});L.marker(a,{icon,zIndexOffset:1000}).addTo(here);if(Number.isFinite(p.coords.accuracy))L.circle(a,{radius:p.coords.accuracy,color:'#2385ff',weight:2,fillColor:'#2385ff',fillOpacity:.08,interactive:false}).addTo(here);map.setView(a,Math.max(map.getZoom(),15));msg.textContent='現在地を表示しました（精度 約'+Math.round(p.coords.accuracy)+'m'+(Number.isFinite(p.coords.heading)?'・方向 '+Math.round(p.coords.heading)+'°':'・方向情報なし')+'）';labels()},e=>{loc.disabled=false;loc.textContent='現在地';msg.textContent=e.code===1?'位置情報の使用が許可されていません':'現在地を取得できません'}, {enableHighAccuracy:true,maximumAge:5000,timeout:15000})};`);
 fs.writeFileSync(p,s);
 console.log('Applied ROAD OPS Hiroshima-Iwakuni definition: Hatsukaichi IC-JCT only');
 console.log('Limited map to Chugoku, Sanyo, Hiroshima-Iwakuni and Hiroshima routes');
-console.log('Applied persistent KP labels for 4 routes; wide zoom density = 10km');
+console.log('Applied KP density: 10km / 5km / 2km / 1km / 0.5km / 0.1km by zoom');
 console.log('Applied KP label design E: white base with route-colored border/text');
 console.log('Hidden developer data status badges');
 console.log('Replaced Chugoku-region button with current-location button');
+console.log('Applied medium Design 2 current-location marker with heading arrow');
