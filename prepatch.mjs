@@ -10,13 +10,11 @@ const keep=`const KEEP=new Set(['chugoku','sanyo','hiroshima_iwakuni','hiroshima
 if(!s.includes(dataAnchor)) throw new Error('DATA filter anchor not found');
 s=s.replace(dataAnchor,keep+dataAnchor);
 const oldKeys="keys=[...new Set(['sanyo','chugoku',r.value])]";
-const newKeys="keys=Object.keys(D)";
 if(!s.includes(oldKeys)) throw new Error('KP label selection block not found');
-s=s.replace(oldKeys,newKeys);
+s=s.replace(oldKeys,"keys=Object.keys(D)");
 const oldStep="function step(){let z=map.getZoom();return z>=15?.1:z>=13?.5:z>=11?1:5}";
-const newStep="function step(){let z=map.getZoom();return z>=15?.1:z>=13?.5:z>=11?1:10}";
 if(!s.includes(oldStep)) throw new Error('zoom density block not found');
-s=s.replace(oldStep,newStep);
+s=s.replace(oldStep,"function step(){let z=map.getZoom();return z>=15?.1:z>=13?.5:z>=11?1:10}");
 const oldCount="kc.textContent=(D.sanyo?.marks?.length||0)+(D.chugoku?.marks?.length||0);msg.textContent='山陽道・中国道KP：広域=5.0km / 1.0km / 0.5km / 0.1km ・ 表示 '+n+'件'";
 const newCount="kc.textContent=Object.values(D).reduce((a,v)=>a+(v.marks?.length||0),0);msg.textContent='4路線KP：広域=10km / 1.0km / 0.5km / 0.1km ・ 表示 '+n+'件'";
 if(!s.includes(oldCount)) throw new Error('KP count/message block not found');
@@ -29,13 +27,23 @@ const styleAnchor='.kpmark.major .kplabel{font-size:13px;padding:4px 9px;backgro
 const styleNew='.kpmark.major .kplabel{font-size:13px;padding:4px 9px;background:#fff;border-color:var(--route);color:var(--route)}.kpmark .kplabel{background:#fff;border-color:var(--route);color:var(--route)}.kpmark .kpstem{background:var(--route);box-shadow:0 0 0 1px #00101855}';
 if(!s.includes(styleAnchor)) throw new Error('KP label style block not found');
 s=s.replace(styleAnchor,styleNew);
-// 閲覧者向けには不要な開発用データ状態3項目を非表示。
 const statusBadges='<span class=tag>道路DATA <b class=ok>FIXED</b></span><span class=tag>高精度 <b>${exact}/19</b></span><span class=tag>KP <b id=kc>0</b></span>';
 if(!s.includes(statusBadges)) throw new Error('status badges block not found');
 s=s.replace(statusBadges,'<span id=kc style="display:none">0</span>');
+// 「中国地方」ボタンを「現在地」に置換。
+if(!s.includes('<button id=all>中国地方</button>')) throw new Error('region button not found');
+s=s.replace('<button id=all>中国地方</button>','<button id=loc>現在地</button>');
+// all参照をlocへ変更し、現在地マーカー用レイヤーを追加。
+const vars="r=$('r'),q=$('q'),go=$('go'),all=$('all'),legend=$('legend'),kc=$('kc'),msg=$('msg');";
+const varsNew="r=$('r'),q=$('q'),go=$('go'),loc=$('loc'),legend=$('legend'),kc=$('kc'),msg=$('msg'),here=L.layerGroup().addTo(map);";
+if(!s.includes(vars)) throw new Error('button vars block not found');
+s=s.replace(vars,varsNew);
+if(!s.includes("all.onclick=()=>map.fitBounds(B);")) throw new Error('region button handler not found');
+s=s.replace("all.onclick=()=>map.fitBounds(B);",`loc.onclick=()=>{if(!navigator.geolocation){msg.textContent='この端末では現在地を取得できません';return}loc.disabled=true;loc.textContent='取得中…';navigator.geolocation.getCurrentPosition(p=>{loc.disabled=false;loc.textContent='現在地';const a=[p.coords.latitude,p.coords.longitude];here.clearLayers();L.circleMarker(a,{radius:8,color:'#fff',weight:3,fillColor:'#2385ff',fillOpacity:1}).addTo(here);if(Number.isFinite(p.coords.accuracy))L.circle(a,{radius:p.coords.accuracy,color:'#2385ff',weight:1,fillOpacity:.08,interactive:false}).addTo(here);map.setView(a,Math.max(map.getZoom(),15));msg.textContent='現在地を表示しました（精度 約'+Math.round(p.coords.accuracy)+'m）';labels()},e=>{loc.disabled=false;loc.textContent='現在地';msg.textContent=e.code===1?'位置情報の使用が許可されていません':'現在地を取得できません'}, {enableHighAccuracy:true,maximumAge:5000,timeout:15000})};`);
 fs.writeFileSync(p,s);
 console.log('Applied ROAD OPS Hiroshima-Iwakuni definition: Hatsukaichi IC-JCT only');
 console.log('Limited map to Chugoku, Sanyo, Hiroshima-Iwakuni and Hiroshima routes');
 console.log('Applied persistent KP labels for 4 routes; wide zoom density = 10km');
 console.log('Applied KP label design E: white base with route-colored border/text');
 console.log('Hidden developer data status badges');
+console.log('Replaced Chugoku-region button with current-location button');
