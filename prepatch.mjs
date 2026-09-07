@@ -30,22 +30,40 @@ s=s.replace(styleAnchor,styleNew);
 const statusBadges='<span class=tag>道路DATA <b class=ok>FIXED</b></span><span class=tag>高精度 <b>${exact}/19</b></span><span class=tag>KP <b id=kc>0</b></span>';
 if(!s.includes(statusBadges)) throw new Error('status badges block not found');
 s=s.replace(statusBadges,'<span id=kc style="display:none">0</span>');
-// 「中国地方」ボタンを「現在地」に置換。
 if(!s.includes('<button id=all>中国地方</button>')) throw new Error('region button not found');
 s=s.replace('<button id=all>中国地方</button>','<button id=loc>現在地</button>');
-// all参照をlocへ変更し、現在地マーカー用レイヤーを追加。
 const vars="r=$('r'),q=$('q'),go=$('go'),all=$('all'),legend=$('legend'),kc=$('kc'),msg=$('msg');";
 const varsNew="r=$('r'),q=$('q'),go=$('go'),loc=$('loc'),legend=$('legend'),kc=$('kc'),msg=$('msg'),here=L.layerGroup().addTo(map);";
 if(!s.includes(vars)) throw new Error('button vars block not found');
 s=s.replace(vars,varsNew);
 if(!s.includes("all.onclick=()=>map.fitBounds(B);")) throw new Error('region button handler not found');
-// Design 2 medium: directional marker, sized between the previous Design 1 and 2.
 s=s.replace("all.onclick=()=>map.fitBounds(B);",`loc.onclick=()=>{if(!navigator.geolocation){msg.textContent='この端末では現在地を取得できません';return}loc.disabled=true;loc.textContent='取得中…';navigator.geolocation.getCurrentPosition(p=>{loc.disabled=false;loc.textContent='現在地';const a=[p.coords.latitude,p.coords.longitude],h=Number.isFinite(p.coords.heading)?p.coords.heading:0;here.clearLayers();const icon=L.divIcon({className:'',iconSize:[52,52],iconAnchor:[26,26],html:'<div style="width:52px;height:52px;position:relative;filter:drop-shadow(0 2px 4px #00101888);transform:rotate('+h+'deg)"><div style="position:absolute;left:20px;top:0;width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-bottom:20px solid #2385ff"></div><div style="position:absolute;left:12px;top:15px;width:24px;height:24px;border-radius:50%;background:#2385ff;border:4px solid white;box-shadow:0 0 0 2px #2385ff55"></div></div>'});L.marker(a,{icon,zIndexOffset:1000}).addTo(here);if(Number.isFinite(p.coords.accuracy))L.circle(a,{radius:p.coords.accuracy,color:'#2385ff',weight:2,fillColor:'#2385ff',fillOpacity:.08,interactive:false}).addTo(here);map.setView(a,Math.max(map.getZoom(),15));msg.textContent='現在地を表示しました（精度 約'+Math.round(p.coords.accuracy)+'m'+(Number.isFinite(p.coords.heading)?'・方向 '+Math.round(p.coords.heading)+'°':'・方向情報なし')+'）';labels()},e=>{loc.disabled=false;loc.textContent='現在地';msg.textContent=e.code===1?'位置情報の使用が許可されていません':'現在地を取得できません'}, {enableHighAccuracy:true,maximumAge:5000,timeout:15000})};`);
+
+// 現在地ボタンを検索段の下・路線凡例の上へ移動し、Google Mapボタンを追加。
+if(!s.includes('<button id=loc>現在地</button>')) throw new Error('current location button not found after patch');
+s=s.replace('<button id=loc>現在地</button>','');
+if(!s.includes('<div id=legend class=legend>')) throw new Error('legend row not found');
+s=s.replace('<div id=legend class=legend>','<div class=mapactions><button id=loc>現在地</button><button id=gmap disabled>Google Map</button></div><div id=legend class=legend>');
+if(!s.includes('</style></head>')) throw new Error('style close not found');
+s=s.replace('</style></head>','.mapactions{display:flex;gap:6px;margin:6px 0}.mapactions button:disabled{opacity:.45}.kplabel{pointer-events:auto;cursor:pointer}.kplabel.picked{box-shadow:0 0 0 3px #fff,0 2px 8px #000b}</style></head>');
+const varsCurrent="r=$('r'),q=$('q'),go=$('go'),loc=$('loc'),legend=$('legend'),kc=$('kc'),msg=$('msg'),here=L.layerGroup().addTo(map);";
+const varsGoogle="r=$('r'),q=$('q'),go=$('go'),loc=$('loc'),gmap=$('gmap'),legend=$('legend'),kc=$('kc'),msg=$('msg'),here=L.layerGroup().addTo(map);";
+if(!s.includes(varsCurrent)) throw new Error('current vars not found');
+s=s.replace(varsCurrent,varsGoogle);
+const clickableHtml="html='<div class=\"kpmark '+side+' '+rank+'\" style=\"--route:'+v.color+'\"><span class=\"kpstem\"></span><span class=\"kplabel\" onclick=\"pickKp('+x[1]+','+x[2]+','+x[0]+',this);event.stopPropagation()\"><b>'+x[0].toFixed(1)+'</b><small>KP</small></span></div>'";
+if(!s.includes(newHtml)) throw new Error('route-colored KP html not found');
+s=s.replace(newHtml,clickableHtml);
+const tileAnchor=";L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'";
+const picker=";let pickedKp=null;function pickKp(lat,lng,k,el){pickedKp=[lat,lng,k];document.querySelectorAll('.kplabel.picked').forEach(x=>x.classList.remove('picked'));el.classList.add('picked');gmap.disabled=false;msg.textContent=Number(k).toFixed(1)+'KP を選択しました'}gmap.onclick=()=>{if(!pickedKp)return;const [lat,lng]=pickedKp;window.open('https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(lat+','+lng),'_blank','noopener')};L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'";
+if(!s.includes(tileAnchor)) throw new Error('tile layer anchor not found');
+s=s.replace(tileAnchor,picker);
+
 fs.writeFileSync(p,s);
 console.log('Applied ROAD OPS Hiroshima-Iwakuni definition: Hatsukaichi IC-JCT only');
 console.log('Limited map to Chugoku, Sanyo, Hiroshima-Iwakuni and Hiroshima routes');
 console.log('Applied KP density: 10km / 5km / 2km / 1km / 0.5km / 0.1km by zoom');
 console.log('Applied KP label design E: white base with route-colored border/text');
 console.log('Hidden developer data status badges');
-console.log('Replaced Chugoku-region button with current-location button');
+console.log('Moved current-location button below KP controls and above route legend');
+console.log('Added Google Map button for the selected KP coordinate');
 console.log('Applied medium Design 2 current-location marker with heading arrow');
