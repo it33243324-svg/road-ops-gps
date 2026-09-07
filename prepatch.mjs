@@ -21,7 +21,6 @@ const oldCount="kc.textContent=(D.sanyo?.marks?.length||0)+(D.chugoku?.marks?.le
 const newCount="kc.textContent=Object.values(D).reduce((a,v)=>a+(v.marks?.length||0),0);msg.textContent='4路線KP：広域=10km / 1.0km / 0.5km / 0.1km ・ 表示 '+n+'件'";
 if(!s.includes(oldCount)) throw new Error('KP count/message block not found');
 s=s.replace(oldCount,newCount);
-// E案: 白ベース＋路線色の枠・文字。縮尺による表示間隔は変更しない。
 const oldHtml="html='<div class=\"kpmark '+side+' '+rank+'\"><span class=\"kpstem\"></span><span class=\"kplabel\"><b>'+x[0].toFixed(1)+'</b><small>KP</small></span></div>'";
 const newHtml="html='<div class=\"kpmark '+side+' '+rank+'\" style=\"--route:'+v.color+'\"><span class=\"kpstem\"></span><span class=\"kplabel\"><b>'+x[0].toFixed(1)+'</b><small>KP</small></span></div>'";
 if(!s.includes(oldHtml)) throw new Error('KP label html block not found');
@@ -30,8 +29,13 @@ const styleAnchor='.kpmark.major .kplabel{font-size:13px;padding:4px 9px;backgro
 const styleNew='.kpmark.major .kplabel{font-size:13px;padding:4px 9px;background:#fff;border-color:var(--route);color:var(--route)}.kpmark .kplabel{background:#fff;border-color:var(--route);color:var(--route)}.kpmark .kpstem{background:var(--route);box-shadow:0 0 0 1px #00101855}';
 if(!s.includes(styleAnchor)) throw new Error('KP label style block not found');
 s=s.replace(styleAnchor,styleNew);
+// 閲覧者向けには不要な開発用データ状態3項目を非表示。
+const statusBadges='<span class=tag>道路DATA <b class=ok>FIXED</b></span><span class=tag>高精度 <b>${exact}/19</b></span><span class=tag>KP <b id=kc>0</b></span>';
+if(!s.includes(statusBadges)) throw new Error('status badges block not found');
+s=s.replace(statusBadges,'<span id=kc style="display:none">0</span>');
 fs.writeFileSync(p,s);
 console.log('Applied ROAD OPS Hiroshima-Iwakuni definition: Hatsukaichi IC-JCT only');
 console.log('Limited map to Chugoku, Sanyo, Hiroshima-Iwakuni and Hiroshima routes');
 console.log('Applied persistent KP labels for 4 routes; wide zoom density = 10km');
 console.log('Applied KP label design E: white base with route-colored border/text');
+console.log('Hidden developer data status badges');
