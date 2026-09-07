@@ -30,15 +30,16 @@ s=s.replace(styleAnchor,styleNew);
 const statusBadges='<span class=tag>道路DATA <b class=ok>FIXED</b></span><span class=tag>高精度 <b>${exact}/19</b></span><span class=tag>KP <b id=kc>0</b></span>';
 if(!s.includes(statusBadges)) throw new Error('status badges block not found');
 s=s.replace(statusBadges,'<span id=kc style="display:none">0</span>');
+// 「中国地方」ボタンを「現在地」に置換。
 if(!s.includes('<button id=all>中国地方</button>')) throw new Error('region button not found');
 s=s.replace('<button id=all>中国地方</button>','<button id=loc>現在地</button>');
+// all参照をlocへ変更し、現在地マーカー用レイヤーを追加。
 const vars="r=$('r'),q=$('q'),go=$('go'),all=$('all'),legend=$('legend'),kc=$('kc'),msg=$('msg');";
 const varsNew="r=$('r'),q=$('q'),go=$('go'),loc=$('loc'),legend=$('legend'),kc=$('kc'),msg=$('msg'),here=L.layerGroup().addTo(map);";
 if(!s.includes(vars)) throw new Error('button vars block not found');
 s=s.replace(vars,varsNew);
 if(!s.includes("all.onclick=()=>map.fitBounds(B);")) throw new Error('region button handler not found');
-// Design 2: larger blue marker plus directional arrow. GPS heading is used when the device/browser provides it.
-s=s.replace("all.onclick=()=>map.fitBounds(B);",`loc.onclick=()=>{if(!navigator.geolocation){msg.textContent='この端末では現在地を取得できません';return}loc.disabled=true;loc.textContent='取得中…';navigator.geolocation.getCurrentPosition(p=>{loc.disabled=false;loc.textContent='現在地';const a=[p.coords.latitude,p.coords.longitude],h=Number.isFinite(p.coords.heading)?p.coords.heading:0;here.clearLayers();const icon=L.divIcon({className:'',iconSize:[64,64],iconAnchor:[32,32],html:'<div style="width:64px;height:64px;position:relative;filter:drop-shadow(0 2px 5px #00101888);transform:rotate('+h+'deg)"><div style="position:absolute;left:25px;top:0;width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-bottom:25px solid #2385ff"></div><div style="position:absolute;left:14px;top:18px;width:30px;height:30px;border-radius:50%;background:#2385ff;border:4px solid white;box-shadow:0 0 0 3px #2385ff55"></div></div>'});L.marker(a,{icon,zIndexOffset:1000}).addTo(here);if(Number.isFinite(p.coords.accuracy))L.circle(a,{radius:p.coords.accuracy,color:'#2385ff',weight:2,fillColor:'#2385ff',fillOpacity:.08,interactive:false}).addTo(here);map.setView(a,Math.max(map.getZoom(),15));msg.textContent='現在地を表示しました（精度 約'+Math.round(p.coords.accuracy)+'m'+(Number.isFinite(p.coords.heading)?'・方向 '+Math.round(p.coords.heading)+'°':'・方向情報なし')+'）';labels()},e=>{loc.disabled=false;loc.textContent='現在地';msg.textContent=e.code===1?'位置情報の使用が許可されていません':'現在地を取得できません'}, {enableHighAccuracy:true,maximumAge:5000,timeout:15000})};`);
+s=s.replace("all.onclick=()=>map.fitBounds(B);",`loc.onclick=()=>{if(!navigator.geolocation){msg.textContent='この端末では現在地を取得できません';return}loc.disabled=true;loc.textContent='取得中…';navigator.geolocation.getCurrentPosition(p=>{loc.disabled=false;loc.textContent='現在地';const a=[p.coords.latitude,p.coords.longitude];here.clearLayers();L.circleMarker(a,{radius:8,color:'#fff',weight:3,fillColor:'#2385ff',fillOpacity:1}).addTo(here);if(Number.isFinite(p.coords.accuracy))L.circle(a,{radius:p.coords.accuracy,color:'#2385ff',weight:1,fillOpacity:.08,interactive:false}).addTo(here);map.setView(a,Math.max(map.getZoom(),15));msg.textContent='現在地を表示しました（精度 約'+Math.round(p.coords.accuracy)+'m）';labels()},e=>{loc.disabled=false;loc.textContent='現在地';msg.textContent=e.code===1?'位置情報の使用が許可されていません':'現在地を取得できません'}, {enableHighAccuracy:true,maximumAge:5000,timeout:15000})};`);
 fs.writeFileSync(p,s);
 console.log('Applied ROAD OPS Hiroshima-Iwakuni definition: Hatsukaichi IC-JCT only');
 console.log('Limited map to Chugoku, Sanyo, Hiroshima-Iwakuni and Hiroshima routes');
@@ -46,4 +47,3 @@ console.log('Applied persistent KP labels for 4 routes; wide zoom density = 10km
 console.log('Applied KP label design E: white base with route-colored border/text');
 console.log('Hidden developer data status badges');
 console.log('Replaced Chugoku-region button with current-location button');
-console.log('Applied current-location marker design 2: larger marker with GPS heading arrow');
