@@ -17,6 +17,13 @@ function collectGroups(bucket, output) {
         if (!event || typeof event !== 'object') continue;
         const title = String(event.title || '').trim();
         if (!title) continue;
+        const coordinates = Array.isArray(event.coordinate) ? event.coordinate : event.coordinate ? [event.coordinate] : [];
+        const points = coordinates.map(c => ({
+          x: ((Number(c.startX) || 0) + (Number(c.endX) || Number(c.startX) || 0)) / 2,
+          y: ((Number(c.startY) || 0) + (Number(c.endY) || Number(c.startY) || 0)) / 2
+        })).filter(c => Number.isFinite(c.x) && Number.isFinite(c.y) && (c.x !== 0 || c.y !== 0));
+        const mapX = points.length ? points.reduce((n, c) => n + c.x, 0) / points.length : null;
+        const mapY = points.length ? points.reduce((n, c) => n + c.y, 0) / points.length : null;
         output.push({
           road: String(road.roadName || '').trim(),
           category,
@@ -25,6 +32,7 @@ function collectGroups(bucket, output) {
           direction: String(event.direction || '').trim(),
           reason: String(event.reason || '').trim(),
           detail: String(event.detail || '').trim(),
+          mapX, mapY,
           url: /^https:\/\//.test(event.url || '') ? event.url : ''
         });
       }
