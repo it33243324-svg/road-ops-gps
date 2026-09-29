@@ -1,0 +1,56 @@
+const SOURCE_URL = 'https://ihighway.jp/datas/json/traffic.json';
+const AREA_KEY = 'area07';
+
+const CATEGORY_LABELS = {
+  closed: '通行止', oneLane: '片側交互通行', laneRestriction: '車線規制',
+  underRegulation: '規制中', accident: '事故', broken: '故障車',
+  ramp: 'IC・ランプ規制', falling: '落下物', jam: '渋滞',
+  snowChain: 'チェーン規制', snowTires: '冬用タイヤ規制',
+  snowPlow: '除雪作業', rainCaution: '雨天注意', antifreeze: '凍結防止作業'
+};
+
+function collectGroups(bucket, output) {
+  for (const [category, roads] of Object.entries(bucket || {})) {
+    if (!Array.isArray(roads)) continue;
+    for (const road of roads) {
+      for (const event of Array.isArray(road?.info) ? road.info : []) {
+        if (!event || typeof event !== 'object') continue;
+        const title = String(event.title || '').trim();
+        if (!title) continue;
+        output.push({
+          road: String(road.roadName || '').trim(),
+          category,
+          categoryLabel: CATEGORY_LABELS[category] || category,
+          title,
+          direction: String(event.direction || '').trim(),
+          reason: String(event.reason || '').trim(),
+          detail: String(event.detail || '').trim(),
+          url: /^https:\/\//.test(event.url || '') ? event.url : ''
+        });
+      }
+    }
+  }
+}
+
+module.exports = async function handler(req, res) {
+  res.setHeader('Cache-Control', 'no-store, max-age=0');
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  if (req.method !== 'GET') {
+    res.setHeader('Allow', 'GET');
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+  try {
+    const upstream = await fetch(SOURCE_URL, { headers: { 'User-Agent': 'KPMAP/1.0 traffic display' }, signal: AbortSignal.timeout(12000) });
+    if (!upstream.ok) throw new Error('upstream status ' + upstream.status);
+    const raw = await upstream.json();
+    const area = raw?.[AREA_KEY];
+    if (!area || typeof area !== 'object') throw new Error('area07 is missing');
+    const events = [];
+    collectGroups(area.trafficInfo, events);
+    collectGroups(area.otherTrafficInfo, events);
+    events.sort((a, b) => a.road.localeCompare(b.road, 'ja') || a.title.localeCompare(b.title, 'ja'));
+    return res.status(200).json({ area: '中国地方', source: 'iHighway / JARTIC', fetchedAt: new Date().toISOString(), count: events.length, events });
+  } catch (error) {
+    return res.status(502).json({ error: '交通情報を取得できませんでした', detail: String(error?.message || error) });
+  }
+};
