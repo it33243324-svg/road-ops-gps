@@ -250,9 +250,11 @@
     if (category === 'ramp') return '#ffb23f';
     return '#53c8f5';
   }
+  const directionLabel = value => String(value || '').split(/[：:]/)[0].trim();
+
   function popupHtml(event) {
     return '<strong>' + escapeHtml(event.road) + '</strong><br>' + escapeHtml(event.title) +
-      '<br>' + [event.categoryLabel, event.direction, event.reason, event.detail].filter(Boolean).map(escapeHtml).join(' ・ ') +
+      '<br>' + [event.categoryLabel, directionLabel(event.direction), event.reason, event.detail].filter(Boolean).map(escapeHtml).join(' ・ ') +
       (event.mapQuality === 'estimated' ? '<br><small>地図位置は道路上の参考表示</small>' : '');
   }
   function signFor(event) {
@@ -329,7 +331,7 @@
       '<article class="traffic-card" data-index="' + index + '" style="border-left-color:' + colorFor(event.category) + '">' +
       '<div class="traffic-loc">' + escapeHtml(event.road) + '　' + escapeHtml(event.title) + '</div>' +
       '<div class="traffic-tags">' +
-      [event.categoryLabel, event.direction, event.reason, event.detail].filter(Boolean)
+      [event.categoryLabel, directionLabel(event.direction), event.reason, event.detail].filter(Boolean)
         .map(tag => '<span class="traffic-tag">' + escapeHtml(tag) + '</span>').join('') +
       '</div></article>'
     ).join('') : '<div class="traffic-empty">現在地から' + radius + 'km以内に交通情報はありません。</div>';
