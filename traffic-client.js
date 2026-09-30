@@ -130,7 +130,7 @@
     const { line, near } = chosen;
     const cumulative = [0];
     for (let i = 1; i < line.length; i++) cumulative.push(cumulative[i - 1] + km(line[i - 1], line[i]));
-    const index = Math.floor(near.position), fraction = near.position - index;
+    const index = Math.min(line.length - 2, Math.floor(near.position)), fraction = near.position - index;
     const along = cumulative[index] + (cumulative[index + 1] - cumulative[index]) * fraction;
     const start = Math.max(0, along - 0.35), end = Math.min(cumulative[cumulative.length - 1], along + 0.35);
     if (end - start < 0.05) return null;
@@ -273,7 +273,7 @@
     }
     if (!restrictionRenderer) restrictionRenderer = L.canvas({ pane: 'restrictionPane', padding: .5 });
     for (const event of trafficData) {
-      if (!event.mapPath) continue;
+      if (!event.mapPath || !event.mapPath.every(p => p.every(Number.isFinite))) continue;
       L.polyline(event.mapPath, { pane: 'restrictionPane', renderer: restrictionRenderer, color: '#fff', weight: 13, opacity: .95, interactive: false }).addTo(trafficLayer);
       L.polyline(event.mapPath, { pane: 'restrictionPane', renderer: restrictionRenderer, color: '#8aca00', weight: 9, opacity: 1 })
         .bindPopup(popupHtml(event)).bindTooltip(event.road + ' ' + event.title + ' / ' + event.direction).addTo(trafficLayer);
@@ -362,7 +362,8 @@
       locateEvents(trafficData);
       renderMap();
       renderList();
-    } catch {
+    } catch (error) {
+      console.error('KPMAP traffic', error);
       meta.textContent = '交通情報を取得できませんでした。再試行してください。';
     } finally {
       busy = false;
