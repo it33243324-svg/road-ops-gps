@@ -38,5 +38,19 @@ html = html.replace(scriptAnchor, '<script src="/traffic-client.js"></script><sc
 fs.copyFileSync('traffic-client.js', 'dist/traffic-client.js');
 fs.copyFileSync('location-client.js', 'dist/location-client.js');
 fs.copyFileSync('location-ui.js', 'dist/location-ui.js');
+// Reuse KP markers and preload overlays outside the viewport.
+html = html.replace('maxBoundsViscosity:.8,zoomSnap:.1', 'maxBoundsViscosity:.8,zoomSnap:.1,preferCanvas:true');
+html = html.replace("{maxZoom:19,attribution:", "{maxZoom:19,updateWhenIdle:false,updateInterval:100,keepBuffer:4,attribution:");
+const labelStart = html.indexOf('function labels(){');
+const labelEnd = html.indexOf('function drawSelected(', labelStart);
+if (labelStart < 0 || labelEnd < 0) throw new Error('KP labels block missing');
+const labelCode = html.slice(labelStart, labelEnd)
+  .replace('function labels(){kp.clearLayers();', 'const kpMarkers=new Map();function labels(){const wanted=new Set();')
+  .replace('b=map.getBounds()', 'b=map.getBounds().pad(.5)')
+  .replace('n++;let t=', "n++;const id=key+':'+x[0];wanted.add(id);if(kpMarkers.has(id))continue;let t=")
+  .replace('L.marker([x[1],x[2]],', 'const marker=L.marker([x[1],x[2]],')
+  .replace('.addTo(kp)}}kc.textContent=', '.addTo(kp);kpMarkers.set(id,marker)}}for(const [id,marker] of kpMarkers){if(!wanted.has(id)){kp.removeLayer(marker);kpMarkers.delete(id)}}kc.textContent=');
+html = html.slice(0,labelStart) + labelCode + html.slice(labelEnd);
+html = html.replace("map.on('zoomend moveend',labels)", "let labelFrame=0;function scheduleLabels(){if(labelFrame)return;labelFrame=requestAnimationFrame(()=>{labelFrame=0;labels()})}map.on('zoomend moveend',scheduleLabels);map.on('move',scheduleLabels)");
 fs.writeFileSync(file, html);
 console.log('Added JARTIC/iHighway traffic list below the map with 5-minute refresh');
