@@ -4,7 +4,7 @@ const file = 'dist/index.html';
 let html = fs.readFileSync(file, 'utf8');
 const styleAnchor = '.mapactions{display:flex;gap:6px;margin:6px 0}';
 const styles = [
-  '#m{height:65vh;min-height:360px}',
+  '#m{height:71vh;min-height:360px}',
   '.location-panel{margin:8px 0 10px;padding:14px 16px;border:1px solid #31505c;border-radius:14px;background:linear-gradient(135deg,#102b36,#081a21);box-shadow:0 6px 18px #00101855}',
   '.location-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}.location-title{font-size:18px;font-weight:900;letter-spacing:.02em}.location-status{padding:4px 9px;border-radius:999px;background:#203b45;color:#c4d7df;font-size:13px;font-weight:750}.location-status.ready{background:#153d35;color:#8dffcc}.location-road-label,.location-stat-label{display:block;color:#a9c1ca;font-size:14px;font-weight:700}.location-road-name{display:block;margin-top:2px;color:#fff;font-size:clamp(22px,5vw,30px);font-weight:950;line-height:1.25;overflow-wrap:anywhere}.location-values{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}.location-value{padding:10px 12px;border:1px solid #294651;border-radius:10px;background:#0a2028}.location-value strong{display:block;margin-top:3px;color:#fff;font-size:clamp(22px,5vw,30px);font-weight:950;line-height:1.2}.location-value.kp strong{font-size:clamp(28px,6vw,38px);color:#95f5c7}.location-note{margin:10px 0 0;color:#b3c7ce;font-size:13px;line-height:1.5}',
   '.traffic{margin:8px 0 10px;border:1px solid #29434d;border-radius:12px;background:#081920;overflow:hidden}',
@@ -22,7 +22,7 @@ const styles = [
   '.traffic-pin{width:32px;height:32px;box-sizing:border-box;position:relative;display:flex;align-items:center;justify-content:center;background:#fff000;border:2px solid #283000;border-radius:6px;box-shadow:0 0 0 2px #fff000;color:#101910;font-size:25px;font-weight:950;line-height:1;filter:drop-shadow(0 2px 3px #00101877)}',
   '.traffic-pin svg{width:25px;height:25px}.traffic-pin.warning{border:3px solid #ff4938;color:#f23d26}.traffic-pin.multi{width:36px;height:36px}.traffic-cluster-symbol svg{width:23px;height:23px}.traffic-cluster-count{position:absolute;right:-8px;bottom:-8px;border-radius:10px;padding:3px 5px;background:#18343d;color:white;border:2px solid white;font-size:11px;line-height:1}',
   '.traffic-key{display:flex;gap:12px;flex-wrap:wrap;padding:7px 10px;border-top:1px solid #29434d;color:#c4d7df;font-size:11px}.traffic-key span{display:inline-flex;align-items:center;gap:5px}.traffic-key-line{width:23px;height:6px;border-radius:2px;background:#8aca00}.traffic-key-sign{background:#fff000;color:#161c0b;padding:1px 4px;border:1px solid #242900;border-radius:3px;font-style:normal;font-weight:900}.traffic-key-sign.warning{color:#ff4938;border:2px solid #ff4938}',
-  '@media(max-width:600px){#m{height:61vh;min-height:320px}.location-panel{padding:12px}.location-values{gap:7px}.location-value{padding:9px}.location-note{font-size:13px}.traffic-list{max-height:34vh}.traffic-head{gap:6px}.traffic-meta{flex-basis:100%}}'
+  '@media(max-width:600px){#m{height:67vh;min-height:320px}.location-panel{padding:12px}.location-values{gap:7px}.location-value{padding:9px}.location-note{font-size:13px}.traffic-list{max-height:34vh}.traffic-head{gap:6px}.traffic-meta{flex-basis:100%}}'
 ].join('');
 if (!html.includes(styleAnchor)) throw new Error('traffic style anchor not found');
 html = html.replace(styleAnchor, styles + styleAnchor);
