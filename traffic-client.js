@@ -8,6 +8,7 @@
   let trafficData = [];
   let userLocation = null;
   let trafficLayer = null;
+  let zoomHooked = false;
 
   const routeByName = {
     '山陽道': 'sanyo', '中国道': 'chugoku', '米子道': 'yonago', '岡山道': 'okayama',
@@ -158,19 +159,58 @@
       '<br>' + [event.categoryLabel, event.direction, event.reason, event.detail].filter(Boolean).map(escapeHtml).join(' ・ ') +
       (event.mapQuality === 'estimated' ? '<br><small>地図位置は道路上の参考表示</small>' : '');
   }
+  function glyphFor(category) {
+    return ({ closed: '閉', accident: '事', broken: '故', falling: '落', jam: '渋',
+      oneLane: '交', laneRestriction: '規', underRegulation: '規', ramp: '閉' })[category] || '情';
+  }
   function renderMap() {
     if (trafficLayer) trafficLayer.clearLayers();
     else trafficLayer = L.layerGroup().addTo(map);
+    if (!map.getPane('trafficPane')) {
+      map.createPane('trafficPane');
+      map.getPane('trafficPane').style.zIndex = '650';
+    }
+    if (!zoomHooked) {
+      map.on('zoomend', renderMap);
+      zoomHooked = true;
+    }
+    const groups = [];
     for (const event of trafficData) {
       if (!event.mapPoint) continue;
-      const color = colorFor(event.category);
-      const marker = L.circleMarker(event.mapPoint, { radius: 8, color: '#fff', weight: 2, fillColor: color, fillOpacity: .95 });
-      marker.bindPopup(popupHtml(event));
+      const pixel = map.latLngToLayerPoint(event.mapPoint);
+      let group = null, distance = 46;
+      for (const candidate of groups) {
+        const center = map.latLngToLayerPoint(candidate.center);
+        const d = pixel.distanceTo(center);
+        if (d < distance) { group = candidate; distance = d; }
+      }
+      if (!group) {
+        group = { events: [], lat: 0, lng: 0, center: event.mapPoint };
+        groups.push(group);
+      }
+      group.events.push(event);
+      group.lat += event.mapPoint[0];
+      group.lng += event.mapPoint[1];
+      group.center = [group.lat / group.events.length, group.lng / group.events.length];
+    }
+    for (const group of groups) {
+      const events = group.events;
+      const color = events.length > 1 ? '#263b45' : colorFor(events[0].category);
+      const label = events.length > 1 ? String(events.length) : glyphFor(events[0].category);
+      const size = events.length > 1 ? 42 : 38;
+      const icon = L.divIcon({
+        className: '',
+        iconSize: [size, size],
+        iconAnchor: [size / 2, size / 2],
+        html: '<span class="traffic-pin' + (events.length > 1 ? ' multi' : '') + '" style="background:' + color + '">' + label + '</span>'
+      });
+      const marker = L.marker(group.center, { pane: 'trafficPane', icon, zIndexOffset: 5000 });
+      marker.bindPopup(events.map(popupHtml).join('<hr>'));
       marker.addTo(trafficLayer);
-      event.mapMarker = marker;
+      for (const event of events) event.mapMarker = marker;
     }
     const placed = trafficData.filter(e => e.mapPoint).length;
-    meta.textContent = '地図に' + placed + '件表示 ・ 一覧は現在地の周辺のみ';
+    meta.textContent = '地図に' + placed + '件表示（近い地点は番号でまとめて表示） ・ 一覧は現在地の周辺のみ';
   }
 
   function renderList() {
