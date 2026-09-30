@@ -92,7 +92,7 @@
   }
 
   loc.onclick = () => requestLocation(true);
-  const recenterControl = L.control({ position: 'bottomright' });
+  const recenterControl = L.control({ position: 'topleft' });
   recenterControl.onAdd = () => {
     const button = L.DomUtil.create('button', 'map-recenter');
     button.type = 'button';
