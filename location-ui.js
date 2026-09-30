@@ -48,7 +48,8 @@
     L.marker(point, { icon, pane: 'locationPane', zIndexOffset: 10000 }).addTo(here);
     if (finite(accuracy)) L.circle(point, { radius: accuracy, color: '#ff304f', weight: 2, fillColor: '#ff304f', fillOpacity: .08, interactive: false }).addTo(here);
 
-    if (firstFix || recenter) map.setView(point, Math.max(map.getZoom(), 15));
+    if (firstFix) setDefaultView(point);
+    else if (recenter) map.setView(point, map.getZoom());
     firstFix = false;
     const headingSource = finite(lastMotionHeading) ? (finite(speed) && speed >= 1.2 && finite(heading) ? 'gps' : 'trail') : null;
     window.dispatchEvent(new CustomEvent('kpmap-location', { detail: {
@@ -78,7 +79,7 @@
       return;
     }
     if (latest && recenter) {
-      map.setView(latest.point, Math.max(map.getZoom(), 15));
+      map.setView(latest.point, map.getZoom());
       return;
     }
     if (watchId !== null) return;
