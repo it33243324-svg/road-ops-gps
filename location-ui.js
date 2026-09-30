@@ -22,7 +22,7 @@
     const { latitude, longitude, accuracy, heading, speed } = position.coords;
     const point = [latitude, longitude];
     if (previousSample) {
-      const moved = distanceMeters(previousSample.point, point);
+      const moved = distanceMeters(lastMovingPoint || previousSample.point, point);
       const goodAccuracy = !finite(accuracy) || accuracy <= 50;
       if (goodAccuracy && ((finite(speed) && speed >= 1.2) || moved >= 25)) {
         if (finite(heading) && heading >= 0 && finite(speed) && speed >= 1.2) lastMotionHeading = heading;
