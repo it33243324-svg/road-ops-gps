@@ -237,6 +237,12 @@
     }
   }
 
+  function listPriority(event) {
+    if (['closed', 'accident', 'broken', 'falling'].includes(event.category)) return 0;
+    if (/工事|作業/.test(event.reason || '') || ['oneLane', 'laneRestriction', 'underRegulation'].includes(event.category)) return 2;
+    return 1;
+  }
+
   function colorFor(category) {
     if (['closed', 'accident', 'broken', 'falling'].includes(category)) return '#ff4f5e';
     if (category === 'jam') return '#ff6f32';
@@ -315,7 +321,7 @@
     }
     const radius = Number(radiusSelect.value) || 25;
     const nearby = trafficData.filter(e => e.mapPoint && km(userLocation, e.mapPoint) <= radius)
-      .sort((a, b) => km(userLocation, a.mapPoint) - km(userLocation, b.mapPoint));
+      .sort((a, b) => listPriority(a) - listPriority(b) || km(userLocation, a.mapPoint) - km(userLocation, b.mapPoint));
     count.textContent = nearby.length + '件（' + radius + 'km以内）';
     list.innerHTML = nearby.length ? nearby.map((event, index) =>
       '<article class="traffic-card" data-index="' + index + '" style="border-left-color:' + colorFor(event.category) + '">' +
