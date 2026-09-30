@@ -61,7 +61,7 @@
     return lower === upper ? null : bearing([lower[1], lower[2]], [upper[1], upper[2]]);
   }
 
-  function getTravelDirection(routeKey, route, point, heading) {
+  function getTravelDirection(routeKey, route, point, heading, detailHeadingSource) {
     if (!Number.isFinite(heading)) return { text: '取得できません', note: '上り・下りは移動中のGPS進行方向から判定します。停車中は表示されないことがあります。' };
     if (!(routeKey in directionRules)) return { text: '判定対象外', note: 'この路線は上り・下りの自動判定に対応していません。' };
     const routeBearing = increasingKpBearing(route, point);
@@ -69,7 +69,7 @@
     const delta = Math.abs(((heading - routeBearing + 540) % 360) - 180);
     if (Math.abs(delta - 90) < 35) return { text: '判定できません', note: 'GPSの進行方向が道路の向きと合わないため、方向を判定できませんでした。' };
     const increasing = delta < 90;
-    return { text: increasing === (directionRules[routeKey] === 'down') ? '下り' : '上り', note: '端末の進行方向から判定しました。道路上の参考表示です。' };
+    return { text: increasing === (directionRules[routeKey] === 'down') ? '下り' : '上り', note: detailHeadingSource === 'trail' ? '停車中のため直前の移動軌跡から判定しました。道路上の参考表示です。' : '端末の進行方向から判定しました。道路上の参考表示です。' };
   }
 
   function locate(detail) {
@@ -90,7 +90,7 @@
     }
     const roadPoint = match.closest.point || point;
     const nearest = nearestKp(match.route, roadPoint);
-    const direction = getTravelDirection(match.key, match.route, roadPoint, Number.isFinite(detail.heading) ? detail.heading : NaN);
+    const direction = getTravelDirection(match.key, match.route, roadPoint, Number.isFinite(detail.heading) ? detail.heading : NaN, detail.headingSource);
     roadEl.textContent = match.route.name + (match.route.code ? ' ' + match.route.code : '');
     directionEl.textContent = direction.text;
     kpEl.textContent = nearest ? Number(nearest.value).toFixed(1) + ' KP' : '—';
@@ -101,4 +101,8 @@
   }
 
   window.addEventListener('kpmap-location', event => locate(event.detail || {}));
+  window.addEventListener('kpmap-location-error', event => {
+    statusEl.textContent = '未取得'; statusEl.classList.remove('ready');
+    noteEl.textContent = event.detail?.message || '現在地を取得できませんでした。';
+  });
 })();

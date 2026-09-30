@@ -119,6 +119,33 @@
     path.push(b.ll);
     return path;
   }
+  function approximateRestrictionPath(route, point) {
+    if (!point) return null;
+    let chosen = null;
+    for (const line of roadChains(route)) {
+      const near = positionOnLine(line, point);
+      if (near && near.distance < 1.2 && (!chosen || near.distance < chosen.near.distance)) chosen = { line, near };
+    }
+    if (!chosen) return null;
+    const { line, near } = chosen;
+    const cumulative = [0];
+    for (let i = 1; i < line.length; i++) cumulative.push(cumulative[i - 1] + km(line[i - 1], line[i]));
+    const index = Math.floor(near.position), fraction = near.position - index;
+    const along = cumulative[index] + (cumulative[index + 1] - cumulative[index]) * fraction;
+    const start = Math.max(0, along - 0.35), end = Math.min(cumulative[cumulative.length - 1], along + 0.35);
+    if (end - start < 0.05) return null;
+    const at = distance => {
+      let i = 1;
+      while (i < cumulative.length && cumulative[i] < distance) i++;
+      if (i >= cumulative.length) return line[line.length - 1];
+      const span = cumulative[i] - cumulative[i - 1], t = span ? (distance - cumulative[i - 1]) / span : 0;
+      return [line[i - 1][0] + (line[i][0] - line[i - 1][0]) * t, line[i - 1][1] + (line[i][1] - line[i - 1][1]) * t];
+    };
+    const path = [at(start)];
+    for (let i = 1; i < line.length - 1; i++) if (cumulative[i] > start && cumulative[i] < end) path.push(line[i]);
+    path.push(at(end));
+    return path;
+  }
   const isRestriction = event => ['oneLane', 'laneRestriction', 'underRegulation'].includes(event.category) ||
     (event.category !== 'closed' && /工事|作業/.test(event.reason || ''));
 
@@ -167,6 +194,10 @@
         if (xy) anchors.push({ routeKey, xy, ll });
         event.mapPoint = snapToRoad(route, ll) || ll;
         event.mapQuality = 'facility';
+        if (isRestriction(event) && !event.mapPath) {
+          event.mapPath = approximateRestrictionPath(route, event.mapPoint);
+          event.mapPathApproximate = !!event.mapPath;
+        }
       }
     }
     const globalFit = fitProjection(anchors);
@@ -202,6 +233,10 @@
       if (!estimate && route.segs?.length) estimate = route.segs.flat()[0];
       event.mapPoint = snapToRoad(route, estimate) || estimate;
       event.mapQuality = 'estimated';
+      if (isRestriction(event) && !event.mapPath) {
+        event.mapPath = approximateRestrictionPath(route, event.mapPoint);
+        event.mapPathApproximate = !!event.mapPath;
+      }
     }
   }
 
@@ -215,7 +250,7 @@
   function popupHtml(event) {
     return '<strong>' + escapeHtml(event.road) + '</strong><br>' + escapeHtml(event.title) +
       '<br>' + [event.categoryLabel, event.direction, event.reason, event.detail].filter(Boolean).map(escapeHtml).join(' ・ ') +
-      (event.mapPath ? '<br><small>緑の線：情報に記載された施設間の規制区間（' + escapeHtml(event.direction) + '）</small>' : '') +
+      (event.mapPath ? '<br><small>緑の線：' + (event.mapPathApproximate ? '規制地点付近の道路上の概算表示' : '情報に記載された施設間の規制区間（' + escapeHtml(event.direction) + '）') + '</small>' : '') +
       (isRestriction(event) && !event.mapPath ? '<br><small>規制の範囲を特定できないため標識のみ表示</small>' : '') +
       (event.mapQuality === 'estimated' ? '<br><small>地図位置は道路上の参考表示</small>' : '');
   }

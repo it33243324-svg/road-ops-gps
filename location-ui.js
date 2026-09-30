@@ -1,0 +1,93 @@
+(() => {
+  let watchId = null;
+  let latest = null;
+  let previousSample = null;
+  let lastMovingPoint = null;
+  let lastMotionHeading = null;
+  let firstFix = true;
+
+  const finite = value => Number.isFinite(value);
+  const rad = value => value * Math.PI / 180;
+  const distanceMeters = (a, b) => {
+    const dLat = rad(b[0] - a[0]), dLng = rad(b[1] - a[1]);
+    const h = Math.sin(dLat / 2) ** 2 + Math.cos(rad(a[0])) * Math.cos(rad(b[0])) * Math.sin(dLng / 2) ** 2;
+    return 12742000 * Math.asin(Math.sqrt(h));
+  };
+  const bearing = (a, b) => (Math.atan2(
+    Math.sin(rad(b[1] - a[1])) * Math.cos(rad(b[0])),
+    Math.cos(rad(a[0])) * Math.sin(rad(b[0])) - Math.sin(rad(a[0])) * Math.cos(rad(b[0])) * Math.cos(rad(b[1] - a[1]))
+  ) * 180 / Math.PI + 360) % 360;
+
+  function showPosition(position, recenter = false) {
+    const { latitude, longitude, accuracy, heading, speed } = position.coords;
+    const point = [latitude, longitude];
+    if (previousSample) {
+      const moved = distanceMeters(previousSample.point, point);
+      const goodAccuracy = !finite(accuracy) || accuracy <= 50;
+      if (goodAccuracy && ((finite(speed) && speed >= 1.2) || moved >= 25)) {
+        if (finite(heading) && heading >= 0 && finite(speed) && speed >= 1.2) lastMotionHeading = heading;
+        else if (lastMovingPoint && distanceMeters(lastMovingPoint, point) >= 15) lastMotionHeading = bearing(lastMovingPoint, point);
+        lastMovingPoint = point;
+      }
+    } else if (!finite(speed) || speed < 1.2) {
+      lastMovingPoint = point;
+    }
+    previousSample = { point, time: position.timestamp };
+    latest = { point, accuracy, speed };
+
+    if (!map.getPane('locationPane')) {
+      map.createPane('locationPane');
+      map.getPane('locationPane').style.zIndex = '700';
+    }
+    here.clearLayers();
+    const arrow = finite(lastMotionHeading) ? lastMotionHeading : 0;
+    const icon = L.divIcon({
+      className: '', iconSize: [52, 52], iconAnchor: [26, 26],
+      html: '<div style="width:52px;height:52px;position:relative;filter:drop-shadow(0 2px 4px #00101888);transform:rotate(' + arrow + 'deg)"><div style="position:absolute;left:20px;top:0;width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-bottom:20px solid #ff304f"></div><div style="position:absolute;left:12px;top:15px;width:24px;height:24px;border-radius:50%;background:#ff304f;border:4px solid white;box-shadow:0 0 0 2px #ff304f55"></div></div>'
+    });
+    L.marker(point, { icon, pane: 'locationPane', zIndexOffset: 10000 }).addTo(here);
+    if (finite(accuracy)) L.circle(point, { radius: accuracy, color: '#ff304f', weight: 2, fillColor: '#ff304f', fillOpacity: .08, interactive: false }).addTo(here);
+
+    if (firstFix || recenter) map.setView(point, Math.max(map.getZoom(), 15));
+    firstFix = false;
+    const headingSource = finite(lastMotionHeading) ? (finite(speed) && speed >= 1.2 && finite(heading) ? 'gps' : 'trail') : null;
+    window.dispatchEvent(new CustomEvent('kpmap-location', { detail: {
+      lat: latitude, lng: longitude, heading: lastMotionHeading, headingSource,
+      speed, accuracy
+    }}));
+    loc.disabled = false;
+    loc.textContent = '現在地';
+    msg.textContent = '現在地を表示しました（精度 約' + Math.round(accuracy || 0) + 'm' +
+      (finite(lastMotionHeading) ? (headingSource === 'trail' ? '・直前の軌跡から方向判定' : '・方向 ' + Math.round(lastMotionHeading) + '°') : '・移動方向を記録中') + '）';
+    labels();
+  }
+
+  function onError(error) {
+    loc.disabled = false;
+    loc.textContent = '現在地';
+    const message = error.code === 1 ? '位置情報の使用が許可されていません' : '現在地を取得できません';
+    msg.textContent = message;
+    window.dispatchEvent(new CustomEvent('kpmap-location-error', { detail: { message } }));
+  }
+
+  function requestLocation(recenter = false) {
+    if (!navigator.geolocation) {
+      onError({ code: 2 });
+      return;
+    }
+    if (latest && recenter) {
+      map.setView(latest.point, Math.max(map.getZoom(), 15));
+      return;
+    }
+    if (watchId !== null) return;
+    loc.disabled = true;
+    loc.textContent = '取得中…';
+    watchId = navigator.geolocation.watchPosition(
+      position => showPosition(position), onError,
+      { enableHighAccuracy: true, maximumAge: 5000, timeout: 20000 }
+    );
+  }
+
+  loc.onclick = () => requestLocation(true);
+  requestLocation(false);
+})();
