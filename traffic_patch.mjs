@@ -39,7 +39,10 @@ fs.copyFileSync('traffic-client.js', 'dist/traffic-client.js');
 fs.copyFileSync('location-client.js', 'dist/location-client.js');
 fs.copyFileSync('location-ui.js', 'dist/location-ui.js');
 // Reuse KP markers and preload overlays outside the viewport.
-html = html.replace('maxBoundsViscosity:.8,zoomSnap:.1', 'maxBoundsViscosity:.8,zoomSnap:.1,preferCanvas:true');
+html = html.replace('maxBoundsViscosity:.8,zoomSnap:.1', 'maxBoundsViscosity:.8,zoomSnap:.1,preferCanvas:true,renderer:L.canvas({padding:.5})');
+// Labels sit above restriction canvases; only their buttons capture input.
+html = html.replace('function pickKp(', "map.createPane('kpPane');map.getPane('kpPane').style.zIndex='640';map.getPane('kpPane').style.pointerEvents='none';function pickKp(");
+html = html.replace('</style>', '.leaflet-kp-pane .leaflet-marker-icon{pointer-events:none}.leaflet-kp-pane .kplabel{pointer-events:auto}.map-recenter{width:48px;height:48px;background:#fff;color:#2385ff;border:1px solid #a7bac4;border-radius:50%;box-shadow:0 2px 9px #00101855;display:flex;align-items:center;justify-content:center;padding:10px;margin:0 8px 14px 0}.map-recenter svg{width:26px;height:26px}.map-recenter:focus-visible{outline:3px solid #2385ff}</style>');
 html = html.replace("{maxZoom:19,attribution:", "{maxZoom:19,updateWhenIdle:false,updateInterval:100,keepBuffer:4,attribution:");
 const labelStart = html.indexOf('function labels(){');
 const labelEnd = html.indexOf('function drawSelected(', labelStart);
@@ -49,6 +52,7 @@ const labelCode = html.slice(labelStart, labelEnd)
   .replace('b=map.getBounds()', 'b=map.getBounds().pad(.5)')
   .replace('n++;let t=', "n++;const id=key+':'+x[0];wanted.add(id);if(kpMarkers.has(id))continue;let t=")
   .replace('L.marker([x[1],x[2]],', 'const marker=L.marker([x[1],x[2]],')
+  .replace('{icon:ic,interactive:false,zIndexOffset:', "{icon:ic,pane:'kpPane',interactive:true,keyboard:false,zIndexOffset:")
   .replace('.addTo(kp)}}kc.textContent=', '.addTo(kp);kpMarkers.set(id,marker)}}for(const [id,marker] of kpMarkers){if(!wanted.has(id)){kp.removeLayer(marker);kpMarkers.delete(id)}}kc.textContent=');
 html = html.slice(0,labelStart) + labelCode + html.slice(labelEnd);
 html = html.replace("map.on('zoomend moveend',labels)", "let labelFrame=0;function scheduleLabels(){if(labelFrame)return;labelFrame=requestAnimationFrame(()=>{labelFrame=0;labels()})}map.on('zoomend moveend',scheduleLabels);map.on('move',scheduleLabels)");
