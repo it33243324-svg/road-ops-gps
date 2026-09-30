@@ -70,3 +70,5 @@ html = html.replace('</style>', ".facility .fname{box-shadow:inset 0 0 0 1.5px v
 fs.writeFileSync(file, html);
 console.log('Added JARTIC/iHighway traffic list below the map with 5-minute refresh');
 
+
+fs.writeFileSync('dist/facility-alternative.html',html.replace('</style>',".facility .fname{background:color-mix(in srgb,var(--fc) 18%,white);box-shadow:inset 3px 0 0 var(--fc),0 0 0 2px white,0 2px 5px #172b3b44}"+'</style>'));
