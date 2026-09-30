@@ -63,6 +63,8 @@
   }
 
   function onError(error) {
+    if (watchId !== null) navigator.geolocation?.clearWatch(watchId);
+    watchId = null;
     loc.disabled = false;
     loc.textContent = '現在地';
     const message = error.code === 1 ? '位置情報の使用が許可されていません' : '現在地を取得できません';

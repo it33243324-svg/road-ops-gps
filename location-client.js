@@ -102,6 +102,7 @@
 
   window.addEventListener('kpmap-location', event => locate(event.detail || {}));
   window.addEventListener('kpmap-location-error', event => {
+    roadEl.textContent = '位置情報を許可すると表示します';
     statusEl.textContent = '未取得'; statusEl.classList.remove('ready');
     noteEl.textContent = event.detail?.message || '現在地を取得できませんでした。';
   });
