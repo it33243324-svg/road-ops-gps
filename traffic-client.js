@@ -297,12 +297,14 @@
       const priority = { closed: 0, accident: 1, broken: 2, falling: 3 };
       const events = group.events.slice().sort((a, b) => (priority[a.category] ?? 10) - (priority[b.category] ?? 10));
       const sign = signFor(events[0]);
-      const size = events.length > 1 ? 36 : 32;
+      const baseSize = events.length > 1 ? 36 : 32;
+      const scale = map.getZoom() < 13 ? .75 : map.getZoom() < 15 ? .875 : 1;
+      const size = Math.round(baseSize * scale);
       const label = events.length > 1 ? '<span class="traffic-cluster-symbol">' + sign.html + '</span><b class="traffic-cluster-count">' + events.length + '</b>' : sign.html;
       const icon = L.divIcon({
         className: '', iconSize: [size, size], iconAnchor: [size / 2, size / 2],
         html: '<span class="traffic-pin' + (sign.warning ? ' warning' : '') + (events.length > 1 ? ' multi' : '') +
-          '" role="img" aria-label="' + escapeHtml(events.length > 1 ? '交通情報 ' + events.length + '件' : events[0].categoryLabel) + '">' + label + '</span>'
+          '" style="transform:scale(' + (size / baseSize) + ');transform-origin:top left" role="img" aria-label="' + escapeHtml(events.length > 1 ? '交通情報 ' + events.length + '件' : events[0].categoryLabel) + '">' + label + '</span>'
       });
       const marker = L.marker(group.center, { pane: 'trafficPane', icon, zIndexOffset: 5000 });
       marker.bindPopup(events.map(popupHtml).join('<hr>'));
