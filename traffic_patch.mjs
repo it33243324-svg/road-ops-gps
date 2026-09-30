@@ -68,7 +68,9 @@ html = html.replace('</style>', "\n#gmap:not(:disabled){position:relative;overfl
 html = html.replace('</style>', '#m{margin-left:-9px;margin-right:-9px;width:calc(100% + 18px)}.location-note{display:none}</style>');
 html = html.replace('</style>', ".facility .fname{background:color-mix(in srgb,var(--fc) 18%,white);box-shadow:inset 0 0 0 1.5px var(--fc),0 0 0 2px white,0 2px 5px #172b3b44}" + '</style>');
 // Trial facility color override. Remove this override to restore the original type colors.
-html = html.replace('</style>', '.facility{--fc:#ffb23f!important}</style>');
+html = html.replace('</style>', '.facility{--fc:#ffc16b!important}</style>');
+html = html.replace('</style>', ".facility-zoomed .facility{font-size:12px;line-height:17px}.facility-zoomed .facility .fname{padding:3px 7px}.facility-zoomed .facility .dot{width:17px;height:17px;font-size:8px}.facility-detail .facility{font-size:14px;line-height:20px}.facility-detail .facility .fname{padding:4px 8px}.facility-detail .facility .dot{width:20px;height:20px;font-size:9px}" + '</style>');
+html = html.replace('</body>', "<script>function updateFacilityScale(){const container=map.getContainer(),z=map.getZoom();container.classList.toggle('facility-zoomed',z>=14);container.classList.toggle('facility-detail',z>=16)}map.on('zoomend',updateFacilityScale);updateFacilityScale();</script>" + '</body>');
 fs.writeFileSync(file, html);
 console.log('Added JARTIC/iHighway traffic list below the map with 5-minute refresh');
 
