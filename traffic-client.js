@@ -323,7 +323,7 @@
       list.innerHTML = '<div class="traffic-empty">周辺の詳細を見るには、地図の「現在地」ボタンを押してね📍 地図には全件表示中だよ。</div>';
       return;
     }
-    const radius = Number(radiusSelect.value) || 25;
+    const radius = Number(radiusSelect.value) || 20;
     const nearby = trafficData.filter(e => e.mapPoint && km(userLocation, e.mapPoint) <= radius)
       .sort((a, b) => listPriority(a) - listPriority(b) || km(userLocation, a.mapPoint) - km(userLocation, b.mapPoint));
     count.textContent = nearby.length + '件（' + radius + 'km以内）';
