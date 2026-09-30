@@ -92,5 +92,18 @@
   }
 
   loc.onclick = () => requestLocation(true);
+  const recenterControl = L.control({ position: 'bottomright' });
+  recenterControl.onAdd = () => {
+    const button = L.DomUtil.create('button', 'map-recenter');
+    button.type = 'button';
+    button.title = '現在地に戻る';
+    button.setAttribute('aria-label', '現在地に戻る');
+    button.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v3m0 14v3M2 12h3m14 0h3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="12" r="7" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="currentColor"/></svg>';
+    L.DomEvent.disableClickPropagation(button);
+    L.DomEvent.disableScrollPropagation(button);
+    button.onclick = () => requestLocation(true);
+    return button;
+  };
+  recenterControl.addTo(map);
   requestLocation(false);
 })();
