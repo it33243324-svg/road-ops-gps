@@ -44,7 +44,9 @@ if(!s.includes('<button id=loc>現在地</button>')) throw new Error('current lo
 if(!s.includes('<div id=legend class=legend>')) throw new Error('legend row not found');s=s.replace('<div id=legend class=legend>','<div class=mapactions><button id=loc>現在地</button><button id=gmap disabled>Google Map</button></div><div id=legend class=legend>');
 if(!s.includes('</style></head>')) throw new Error('style close not found');s=s.replace('</style></head>','.mapactions{display:flex;gap:6px;margin:6px 0}.mapactions button:disabled{opacity:.45}</style></head>');
 const tileAnchor=";L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'";
-const picker=";let pickedKp=null;function pickKp(lat,lng,k,el){pickedKp=[lat,lng,k];document.querySelectorAll('.kplabel.picked').forEach(x=>x.classList.remove('picked'));el.classList.add('picked');gmap.disabled=false;msg.textContent=Number(k).toFixed(1)+'KP を選択しました'}gmap.onclick=()=>{if(!pickedKp)return;const [lat,lng]=pickedKp;window.open('https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(lat+','+lng),'_blank','noopener')};L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'";if(!s.includes(tileAnchor)) throw new Error('tile layer anchor not found');s=s.replace(tileAnchor,picker);
+const picker=";let pickedKp=null;function pickKp(lat,lng,k,el){pickedKp=[lat,lng,k];document.querySelectorAll('.kplabel.picked').forEach(x=>x.classList.remove('picked'));el.classList.add('picked');gmap.disabled=false;msg.textContent=Number(k).toFixed(1)+'KP を選択しました'}gmap.onclick=()=>{if(!pickedKp)return;const [lat,lng]=pickedKp;window.open('https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(lat+','+lng),'_blank','noopener')};L.tileLayer('https://tile.openstreetmap.jp/styles/osm-bright-ja/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap contributors'}";if(!s.includes(tileAnchor)) throw new Error('tile layer anchor not found');s=s.replace(tileAnchor,picker);
+if(!s.includes('<title>KPMAP</title>'))s=s.replace('<title>ROAD OPS</title>','<title>KPMAP</title>');
+if(!s.includes('<b>KPMAP // CHUGOKU</b>'))s=s.replace('<b>ROAD OPS // CHUGOKU</b>','<b>KPMAP // CHUGOKU</b>');
 fs.writeFileSync(p,s);
-console.log('Restored Google Map action for KP labels only');
-console.log('Kept current KP density and all other ROAD OPS behavior');
+console.log('Set KPMAP branding and a brighter Japan OSM basemap');
+console.log('Kept all existing lat/lng geometry and map projection');
