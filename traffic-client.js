@@ -247,8 +247,6 @@
   function popupHtml(event) {
     return '<strong>' + escapeHtml(event.road) + '</strong><br>' + escapeHtml(event.title) +
       '<br>' + [event.categoryLabel, event.direction, event.reason, event.detail].filter(Boolean).map(escapeHtml).join(' ・ ') +
-      (event.mapPath ? '<br><small>緑の線：' + (event.mapPathApproximate ? '規制地点付近の道路上の概算表示' : '情報に記載された施設間の規制区間（' + escapeHtml(event.direction) + '）') + '</small>' : '') +
-      (isRestriction(event) && !event.mapPath ? '<br><small>規制の範囲を特定できないため標識のみ表示</small>' : '') +
       (event.mapQuality === 'estimated' ? '<br><small>地図位置は道路上の参考表示</small>' : '');
   }
   function signFor(event) {
@@ -259,24 +257,12 @@
     const warning = ['accident', 'broken', 'falling', 'closed', 'ramp'].includes(category);
     return { html: category === 'oneLane' ? alternating : isRestriction(event) ? lane : symbols[category] || '!', warning };
   }
-  let restrictionRenderer = null;
   function renderMap() {
     if (trafficLayer) trafficLayer.clearLayers();
     else trafficLayer = L.layerGroup().addTo(map);
     if (!map.getPane('trafficPane')) {
       map.createPane('trafficPane');
       map.getPane('trafficPane').style.zIndex = '650';
-    }
-    if (!map.getPane('restrictionPane')) {
-      map.createPane('restrictionPane');
-      map.getPane('restrictionPane').style.zIndex = '625';
-    }
-    if (!restrictionRenderer) restrictionRenderer = L.canvas({ pane: 'restrictionPane', padding: .5 });
-    for (const event of trafficData) {
-      if (!event.mapPath || !event.mapPath.every(p => p.every(Number.isFinite))) continue;
-      L.polyline(event.mapPath, { pane: 'restrictionPane', renderer: restrictionRenderer, color: '#fff', weight: 13, opacity: .95, interactive: false }).addTo(trafficLayer);
-      L.polyline(event.mapPath, { pane: 'restrictionPane', renderer: restrictionRenderer, color: '#8aca00', weight: 9, opacity: 1 })
-        .bindPopup(popupHtml(event)).bindTooltip(event.road + ' ' + event.title + ' / ' + event.direction).addTo(trafficLayer);
     }
     if (!zoomHooked) {
       map.on('zoomend', renderMap);
@@ -318,8 +304,7 @@
       for (const event of events) event.mapMarker = marker;
     }
     const placed = trafficData.filter(e => e.mapPoint).length;
-    const intervals = trafficData.filter(e => e.mapPath).length;
-    meta.textContent = '地図 ' + placed + '件・緑の規制区間 ' + intervals + '件（施設間・施設付近の概算） ・ 一覧は現在地周辺';
+    meta.textContent = '地図 ' + placed + '件 ・ 一覧は現在地周辺';
   }
 
   function renderList() {
