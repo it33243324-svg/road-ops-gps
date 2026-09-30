@@ -38,7 +38,7 @@
       let best = null, bestLength = 0;
       for (const facility of facilities) {
         const name = norm(facility.name.replace(/\/(SIC|IC)$/i, ''));
-        if (name.length >= 3 && (part.includes(name) || name.includes(part)) && name.length > bestLength) {
+        if (name.length >= 3 && part.includes(name) && name.length > bestLength) {
           best = facility;
           bestLength = name.length;
         }
@@ -194,7 +194,7 @@
         if (xy) anchors.push({ routeKey, xy, ll });
         event.mapPoint = snapToRoad(route, ll) || ll;
         event.mapQuality = 'facility';
-        if (isRestriction(event) && !event.mapPath) {
+        if (isRestriction(event) && !event.mapPath && matches.length === 1) {
           event.mapPath = approximateRestrictionPath(route, event.mapPoint);
           event.mapPathApproximate = !!event.mapPath;
         }
@@ -233,10 +233,7 @@
       if (!estimate && route.segs?.length) estimate = route.segs.flat()[0];
       event.mapPoint = snapToRoad(route, estimate) || estimate;
       event.mapQuality = 'estimated';
-      if (isRestriction(event) && !event.mapPath) {
-        event.mapPath = approximateRestrictionPath(route, event.mapPoint);
-        event.mapPathApproximate = !!event.mapPath;
-      }
+      // Do not draw intervals from unresolved estimated positions.
     }
   }
 
@@ -262,6 +259,7 @@
     const warning = ['accident', 'broken', 'falling', 'closed', 'ramp'].includes(category);
     return { html: category === 'oneLane' ? alternating : isRestriction(event) ? lane : symbols[category] || '!', warning };
   }
+  let restrictionRenderer = null;
   function renderMap() {
     if (trafficLayer) trafficLayer.clearLayers();
     else trafficLayer = L.layerGroup().addTo(map);
@@ -273,10 +271,11 @@
       map.createPane('restrictionPane');
       map.getPane('restrictionPane').style.zIndex = '625';
     }
+    if (!restrictionRenderer) restrictionRenderer = L.canvas({ pane: 'restrictionPane', padding: .5 });
     for (const event of trafficData) {
       if (!event.mapPath) continue;
-      L.polyline(event.mapPath, { pane: 'restrictionPane', color: '#fff', weight: 13, opacity: .95, interactive: false }).addTo(trafficLayer);
-      L.polyline(event.mapPath, { pane: 'restrictionPane', color: '#8aca00', weight: 9, opacity: 1 })
+      L.polyline(event.mapPath, { pane: 'restrictionPane', renderer: restrictionRenderer, color: '#fff', weight: 13, opacity: .95, interactive: false }).addTo(trafficLayer);
+      L.polyline(event.mapPath, { pane: 'restrictionPane', renderer: restrictionRenderer, color: '#8aca00', weight: 9, opacity: 1 })
         .bindPopup(popupHtml(event)).bindTooltip(event.road + ' ' + event.title + ' / ' + event.direction).addTo(trafficLayer);
     }
     if (!zoomHooked) {
@@ -306,7 +305,7 @@
       const priority = { closed: 0, accident: 1, broken: 2, falling: 3 };
       const events = group.events.slice().sort((a, b) => (priority[a.category] ?? 10) - (priority[b.category] ?? 10));
       const sign = signFor(events[0]);
-      const size = events.length > 1 ? 42 : 38;
+      const size = events.length > 1 ? 36 : 32;
       const label = events.length > 1 ? '<span class="traffic-cluster-symbol">' + sign.html + '</span><b class="traffic-cluster-count">' + events.length + '</b>' : sign.html;
       const icon = L.divIcon({
         className: '', iconSize: [size, size], iconAnchor: [size / 2, size / 2],
@@ -320,7 +319,7 @@
     }
     const placed = trafficData.filter(e => e.mapPoint).length;
     const intervals = trafficData.filter(e => e.mapPath).length;
-    meta.textContent = '地図 ' + placed + '件・緑の規制区間 ' + intervals + '件（両端を確認できた区間） ・ 一覧は現在地周辺';
+    meta.textContent = '地図 ' + placed + '件・緑の規制区間 ' + intervals + '件（施設間・施設付近の概算） ・ 一覧は現在地周辺';
   }
 
   function renderList() {
@@ -381,3 +380,4 @@
   load();
   setInterval(load, 300000);
 })();
+
