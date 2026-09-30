@@ -28,7 +28,7 @@
     const h = Math.sin(dLat / 2) ** 2 + Math.cos(rad(a[0])) * Math.cos(rad(b[0])) * Math.sin(dLng / 2) ** 2;
     return 12742 * Math.asin(Math.sqrt(h));
   };
-  const xyCenter = e => Number.isFinite(+e.mapX) && Number.isFinite(+e.mapY) ? [+e.mapY, +e.mapX] : null;
+  const xyCenter = e => e.mapX != null && e.mapY != null && Number.isFinite(+e.mapX) && Number.isFinite(+e.mapY) ? [+e.mapY, +e.mapX] : null;
 
   function titleFacilities(route, title) {
     const parts = String(title || '').split('→').map(norm).filter(Boolean);
@@ -65,6 +65,62 @@
     }
     return best;
   }
+
+  const roadChainCache = new WeakMap();
+  function roadChains(route) {
+    if (roadChainCache.has(route)) return roadChainCache.get(route);
+    const chains = [];
+    for (const segment of route.segs || []) {
+      if (segment.length < 2) continue;
+      const previous = chains[chains.length - 1];
+      if (previous && km(previous[previous.length - 1], segment[0]) < 0.15) previous.push(...segment.slice(1));
+      else chains.push(segment.slice());
+    }
+    roadChainCache.set(route, chains);
+    return chains;
+  }
+  function positionOnLine(line, point) {
+    let best = null;
+    const cos = Math.cos(point[0] * Math.PI / 180);
+    for (let i = 1; i < line.length; i++) {
+      const a = line[i - 1], b = line[i];
+      const dx = (b[1] - a[1]) * cos, dy = b[0] - a[0];
+      const px = (point[1] - a[1]) * cos, py = point[0] - a[0];
+      const den = dx * dx + dy * dy;
+      const t = den ? Math.max(0, Math.min(1, (px * dx + py * dy) / den)) : 0;
+      const ll = [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
+      const distance = km(point, ll);
+      if (!best || distance < best.distance) best = { ll, position: i - 1 + t, distance };
+    }
+    return best;
+  }
+  function restrictionPath(route, title) {
+    // Only color a real reported interval when BOTH endpoint names resolve.
+    // A single "付近" event has no known extent and keeps its point sign.
+    const parts = String(title || '').split(/→|〜|～/);
+    if (parts.length !== 2) return null;
+    const start = titleFacilities(route, parts[0])[0];
+    const end = titleFacilities(route, parts[1])[0];
+    if (!start || !end || start === end) return null;
+    let chosen = null;
+    for (const line of roadChains(route)) {
+      const a = positionOnLine(line, [start.lat, start.lng]);
+      const b = positionOnLine(line, [end.lat, end.lng]);
+      if (!a || !b || a.distance > 1 || b.distance > 1) continue;
+      if (!chosen || a.distance + b.distance < chosen.error) chosen = { line, a, b, error: a.distance + b.distance };
+    }
+    if (!chosen) return null;
+    const { line } = chosen;
+    let { a, b } = chosen;
+    if (a.position > b.position) [a, b] = [b, a];
+    if (km(a.ll, b.ll) < 0.03) return null;
+    const path = [a.ll];
+    for (let i = Math.floor(a.position) + 1; i < b.position; i++) path.push(line[i]);
+    path.push(b.ll);
+    return path;
+  }
+  const isRestriction = event => ['oneLane', 'laneRestriction', 'underRegulation'].includes(event.category) ||
+    (event.category !== 'closed' && /工事|作業/.test(event.reason || ''));
 
   function solve3(matrix, vector) {
     const a = matrix.map((row, i) => [...row, vector[i]]);
@@ -104,6 +160,7 @@
       const routeKey = routeByName[event.road], route = D[routeKey];
       const xy = xyCenter(event);
       if (!route) continue;
+      if (isRestriction(event)) event.mapPath = restrictionPath(route, event.title);
       const matches = titleFacilities(route, event.title);
       if (matches.length) {
         const ll = [matches.reduce((n, f) => n + f.lat, 0) / matches.length, matches.reduce((n, f) => n + f.lng, 0) / matches.length];
@@ -151,17 +208,24 @@
   function colorFor(category) {
     if (['closed', 'accident', 'broken', 'falling'].includes(category)) return '#ff4f5e';
     if (category === 'jam') return '#ff6f32';
-    if (['oneLane', 'laneRestriction', 'underRegulation', 'ramp'].includes(category)) return '#ffb23f';
+    if (['oneLane', 'laneRestriction', 'underRegulation'].includes(category)) return '#8aca00';
+    if (category === 'ramp') return '#ffb23f';
     return '#53c8f5';
   }
   function popupHtml(event) {
     return '<strong>' + escapeHtml(event.road) + '</strong><br>' + escapeHtml(event.title) +
       '<br>' + [event.categoryLabel, event.direction, event.reason, event.detail].filter(Boolean).map(escapeHtml).join(' ・ ') +
+      (event.mapPath ? '<br><small>緑の線：情報に記載された施設間の規制区間（' + escapeHtml(event.direction) + '）</small>' : '') +
+      (isRestriction(event) && !event.mapPath ? '<br><small>規制の範囲を特定できないため標識のみ表示</small>' : '') +
       (event.mapQuality === 'estimated' ? '<br><small>地図位置は道路上の参考表示</small>' : '');
   }
-  function glyphFor(category) {
-    return ({ closed: '閉', accident: '事', broken: '故', falling: '落', jam: '渋',
-      oneLane: '交', laneRestriction: '規', underRegulation: '規', ramp: '閉' })[category] || '情';
+  function signFor(event) {
+    const category = event.category;
+    const lane = '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M7 27V18L15 10V5M24 5V27" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"/><path d="M17 16V27" stroke="currentColor" stroke-width="2" stroke-dasharray="3 2"/><path d="M10 5h10l-5 6z" fill="currentColor"/></svg>';
+    const alternating = '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M9 27V6m-5 5 5-5 5 5M23 5v21m-5-5 5 5 5-5" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    const symbols = { closed: '×', ramp: '×', accident: '!', broken: '!', falling: '!', jam: '渋' };
+    const warning = ['accident', 'broken', 'falling', 'closed', 'ramp'].includes(category);
+    return { html: category === 'oneLane' ? alternating : isRestriction(event) ? lane : symbols[category] || '!', warning };
   }
   function renderMap() {
     if (trafficLayer) trafficLayer.clearLayers();
@@ -169,6 +233,16 @@
     if (!map.getPane('trafficPane')) {
       map.createPane('trafficPane');
       map.getPane('trafficPane').style.zIndex = '650';
+    }
+    if (!map.getPane('restrictionPane')) {
+      map.createPane('restrictionPane');
+      map.getPane('restrictionPane').style.zIndex = '625';
+    }
+    for (const event of trafficData) {
+      if (!event.mapPath) continue;
+      L.polyline(event.mapPath, { pane: 'restrictionPane', color: '#fff', weight: 13, opacity: .95, interactive: false }).addTo(trafficLayer);
+      L.polyline(event.mapPath, { pane: 'restrictionPane', color: '#8aca00', weight: 9, opacity: 1 })
+        .bindPopup(popupHtml(event)).bindTooltip(event.road + ' ' + event.title + ' / ' + event.direction).addTo(trafficLayer);
     }
     if (!zoomHooked) {
       map.on('zoomend', renderMap);
@@ -194,15 +268,15 @@
       group.center = [group.lat / group.events.length, group.lng / group.events.length];
     }
     for (const group of groups) {
-      const events = group.events;
-      const color = events.length > 1 ? '#263b45' : colorFor(events[0].category);
-      const label = events.length > 1 ? String(events.length) : glyphFor(events[0].category);
+      const priority = { closed: 0, accident: 1, broken: 2, falling: 3 };
+      const events = group.events.slice().sort((a, b) => (priority[a.category] ?? 10) - (priority[b.category] ?? 10));
+      const sign = signFor(events[0]);
       const size = events.length > 1 ? 42 : 38;
+      const label = events.length > 1 ? '<span class="traffic-cluster-symbol">' + sign.html + '</span><b class="traffic-cluster-count">' + events.length + '</b>' : sign.html;
       const icon = L.divIcon({
-        className: '',
-        iconSize: [size, size],
-        iconAnchor: [size / 2, size / 2],
-        html: '<span class="traffic-pin' + (events.length > 1 ? ' multi' : '') + '" style="background:' + color + '">' + label + '</span>'
+        className: '', iconSize: [size, size], iconAnchor: [size / 2, size / 2],
+        html: '<span class="traffic-pin' + (sign.warning ? ' warning' : '') + (events.length > 1 ? ' multi' : '') +
+          '" role="img" aria-label="' + escapeHtml(events.length > 1 ? '交通情報 ' + events.length + '件' : events[0].categoryLabel) + '">' + label + '</span>'
       });
       const marker = L.marker(group.center, { pane: 'trafficPane', icon, zIndexOffset: 5000 });
       marker.bindPopup(events.map(popupHtml).join('<hr>'));
@@ -210,7 +284,8 @@
       for (const event of events) event.mapMarker = marker;
     }
     const placed = trafficData.filter(e => e.mapPoint).length;
-    meta.textContent = '地図に' + placed + '件表示（近い地点は番号でまとめて表示） ・ 一覧は現在地の周辺のみ';
+    const intervals = trafficData.filter(e => e.mapPath).length;
+    meta.textContent = '地図 ' + placed + '件・緑の規制区間 ' + intervals + '件（両端を確認できた区間） ・ 一覧は現在地周辺';
   }
 
   function renderList() {

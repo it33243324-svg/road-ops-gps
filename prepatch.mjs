@@ -14,7 +14,8 @@ if(DATA.hiroshima_iwakuni){
 }`;
 if(!s.includes(old)) throw new Error('target patch block not found');s=s.replace(old,neu);
 const dataAnchor="if(!DATA.chugoku||DATA.chugoku.marks.length<2)throw Error('中国道KP固定データの生成に失敗しました');";
-const keep=`const KEEP=new Set(Object.keys(DATA));
+const keep=`DATA.chugoku.color='#ec5bb4';
+const KEEP=new Set(Object.keys(DATA));
 `;
 if(!s.includes(dataAnchor)) throw new Error('DATA filter anchor not found');s=s.replace(dataAnchor,keep+dataAnchor);
 const oldKeys="keys=[...new Set(['sanyo','chugoku',r.value])]";if(!s.includes(oldKeys)) throw new Error('KP label selection block not found');s=s.replace(oldKeys,"keys=[...new Set(['sanyo','chugoku',r.value])]");
