@@ -44,7 +44,7 @@ if(!s.includes("all.onclick=()=>map.fitBounds(B);")) throw new Error('region but
 const mapOptions="maxBoundsViscosity:.8}";
 if(!s.includes(mapOptions)) throw new Error('map options not found');s=s.replace(mapOptions,"maxBoundsViscosity:.8,zoomSnap:.1}");
 const startup="drawAll();drawSelected(false);";
-const defaultView="function setDefaultView(point){const size=map.getSize(),pixels=Math.max(size.x,size.y),zoom=Math.log2(40075016.686*Math.cos(point[0]*Math.PI/180)*pixels/(256*9000));map.setView(point,Math.round(zoom*10)/10)}setDefaultView([34.46,132.412]);drawAll();drawSelected(false);";
+const defaultView="function setDefaultView(point){const size=map.getSize(),pixels=Math.max(size.x,size.y),zoom=Math.log2(40075016.686*Math.cos(point[0]*Math.PI/180)*pixels/(256*9000));map.setView(point,Math.round(zoom*10)/10-2)}setDefaultView([34.46,132.412]);drawAll();drawSelected(false);";
 if(!s.includes(startup)) throw new Error('map startup not found');s=s.replace(startup,defaultView);
 if(!s.includes('<button id=loc>現在地</button>')) throw new Error('current location button not found after patch');s=s.replace('<button id=loc>現在地</button>','');
 if(!s.includes('<div id=legend class=legend>')) throw new Error('legend row not found');s=s.replace('<div id=legend class=legend>','<div class=mapactions><button id=loc>現在地</button><button id=gmap disabled>Google Map</button></div><div id=legend class=legend>');
