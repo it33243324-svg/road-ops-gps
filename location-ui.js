@@ -43,7 +43,7 @@
     const arrow = finite(lastMotionHeading) ? lastMotionHeading : 0;
     const icon = L.divIcon({
       className: '', iconSize: [52, 52], iconAnchor: [26, 26],
-      html: '<div style="width:52px;height:52px;position:relative;filter:drop-shadow(0 2px 4px #00101888);transform:rotate(' + arrow + 'deg)"><div style="position:absolute;left:20px;top:0;width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-bottom:20px solid #ff304f"></div><div style="position:absolute;left:12px;top:15px;width:24px;height:24px;border-radius:50%;background:#ff304f;border:4px solid white;box-shadow:0 0 0 2px #ff304f55"></div></div>'
+      html: '<div style="width:52px;height:52px;position:relative;"><span class="location-wave"></span><span class="location-wave second"></span></div><div style="width:52px;height:52px;position:absolute;left:0;top:0;filter:drop-shadow(0 2px 4px #00101888);transform:rotate(' + arrow + 'deg)"><div style="position:absolute;left:20px;top:0;width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-bottom:20px solid #ff304f"></div><div style="position:absolute;left:12px;top:15px;width:24px;height:24px;border-radius:50%;background:#ff304f;border:4px solid white;box-shadow:0 0 0 2px #ff304f55"></div></div>'
     });
     L.marker(point, { icon, pane: 'locationPane', zIndexOffset: 10000 }).addTo(here);
     if (finite(accuracy)) L.circle(point, { radius: accuracy, color: '#ff304f', weight: 2, fillColor: '#ff304f', fillOpacity: .08, interactive: false }).addTo(here);
