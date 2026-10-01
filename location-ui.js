@@ -2,9 +2,13 @@
   let watchId = null;
   let latest = null;
   let previousSample = null;
-  let lastMovingPoint = null;
   let lastMotionHeading = null;
+  let lastHeadingSource = null;
+  let vehicleEvidence = 0;
   let firstFix = true;
+
+  const MIN_VEHICLE_SPEED = 7; // m/s ≈ 25 km/h
+  const MIN_TRACK_SPEED = 8; // m/s ≈ 29 km/h
 
   const finite = value => Number.isFinite(value);
   const rad = value => value * Math.PI / 180;
@@ -21,16 +25,42 @@
   function showPosition(position, recenter = false) {
     const { latitude, longitude, accuracy, heading, speed } = position.coords;
     const point = [latitude, longitude];
+    let vehicleCandidate = false;
+    let candidateHeading = null;
+    let candidateSource = null;
     if (previousSample) {
-      const moved = distanceMeters(lastMovingPoint || previousSample.point, point);
-      const goodAccuracy = !finite(accuracy) || accuracy <= 50;
-      if (goodAccuracy && ((finite(speed) && speed >= 1.2) || moved >= 25)) {
-        if (finite(heading) && heading >= 0 && finite(speed) && speed >= 1.2) lastMotionHeading = heading;
-        else if (lastMovingPoint && distanceMeters(lastMovingPoint, point) >= 15) lastMotionHeading = bearing(lastMovingPoint, point);
-        lastMovingPoint = point;
+      const elapsed = (position.timestamp - previousSample.time) / 1000;
+      const goodAccuracy = finite(accuracy) && accuracy <= 35;
+      const moved = distanceMeters(previousSample.point, point);
+      const gpsSpeedConfirmsVehicle = goodAccuracy && finite(speed) && speed >= MIN_VEHICLE_SPEED;
+
+      if (gpsSpeedConfirmsVehicle) {
+        vehicleCandidate = true;
+        if (finite(heading) && heading >= 0) {
+          candidateHeading = heading;
+          candidateSource = 'vehicle-gps';
+        } else if (elapsed >= 1 && elapsed <= 10 && moved >= 5) {
+          candidateHeading = bearing(previousSample.point, point);
+          candidateSource = 'vehicle-track';
+        }
+      } else if (goodAccuracy && accuracy <= 25 && elapsed >= 1 && elapsed <= 10 &&
+                 moved / elapsed >= MIN_TRACK_SPEED && moved <= elapsed * 45) {
+        // Some devices omit coords.speed; infer vehicle movement only from
+        // sustained, accurate GPS fixes at highway-like speeds.
+        vehicleCandidate = true;
+        candidateHeading = bearing(previousSample.point, point);
+        candidateSource = 'vehicle-track';
       }
-    } else if (!finite(speed) || speed < 1.2) {
-      lastMovingPoint = point;
+    }
+
+    if (vehicleCandidate && finite(candidateHeading)) {
+      vehicleEvidence += 1;
+      if (vehicleEvidence >= 2) {
+        lastMotionHeading = candidateHeading;
+        lastHeadingSource = candidateSource;
+      }
+    } else {
+      vehicleEvidence = 0;
     }
     previousSample = { point, time: position.timestamp };
     latest = { point, accuracy, speed };
@@ -51,7 +81,7 @@
     if (firstFix) setDefaultView(point);
     else if (recenter) map.setView(point, map.getZoom());
     firstFix = false;
-    const headingSource = finite(lastMotionHeading) ? (finite(speed) && speed >= 1.2 && finite(heading) ? 'gps' : 'trail') : null;
+    const headingSource = finite(lastMotionHeading) ? lastHeadingSource : null;
     window.dispatchEvent(new CustomEvent('kpmap-location', { detail: {
       lat: latitude, lng: longitude, heading: lastMotionHeading, headingSource,
       speed, accuracy
@@ -59,7 +89,7 @@
     loc.disabled = false;
     loc.textContent = '現在地';
     msg.textContent = '現在地を表示しました（精度 約' + Math.round(accuracy || 0) + 'm' +
-      (finite(lastMotionHeading) ? (headingSource === 'trail' ? '・直前の軌跡から方向判定' : '・方向 ' + Math.round(lastMotionHeading) + '°') : '・移動方向を記録中') + '）';
+      (finite(lastMotionHeading) ? '・車両走行時の方向を保持' : '・車両走行を確認中') + '）';
     labels();
   }
 
