@@ -62,14 +62,17 @@
   }
 
   function getTravelDirection(routeKey, route, point, heading, detailHeadingSource) {
-    if (!Number.isFinite(heading)) return { text: '取得できません', note: '上り・下りは移動中のGPS進行方向から判定します。停車中は表示されないことがあります。' };
+    if (!Number.isFinite(heading)) return { text: '取得できません', note: '車で約25km/h以上の走行をGPSで確認すると判定します。歩行中のGPSは判定に使いません。' };
     if (!(routeKey in directionRules)) return { text: '判定対象外', note: 'この路線は上り・下りの自動判定に対応していません。' };
     const routeBearing = increasingKpBearing(route, point);
     if (!Number.isFinite(routeBearing)) return { text: '判定できません', note: '道路の方向を確認できませんでした。' };
     const delta = Math.abs(((heading - routeBearing + 540) % 360) - 180);
     if (Math.abs(delta - 90) < 35) return { text: '判定できません', note: 'GPSの進行方向が道路の向きと合わないため、方向を判定できませんでした。' };
     const increasing = delta < 90;
-    return { text: increasing === (directionRules[routeKey] === 'down') ? '下り' : '上り', note: detailHeadingSource === 'trail' ? '停車中のため直前の移動軌跡から判定しました。道路上の参考表示です。' : '端末の進行方向から判定しました。道路上の参考表示です。' };
+    const sourceNote = detailHeadingSource === 'vehicle-track'
+      ? '車両走行速度とGPS軌跡から推定しました。'
+      : '車両走行中のGPS進行方向から判定しました。';
+    return { text: increasing === (directionRules[routeKey] === 'down') ? '下り' : '上り', note: sourceNote + '歩行中のGPSは判定に使いません。道路上の参考表示です.' };
   }
 
   function locate(detail) {
