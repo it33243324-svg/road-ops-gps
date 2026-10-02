@@ -54,6 +54,7 @@ const picker=";let pickedKp=null;function pickKp(lat,lng,k,el){pickedKp=[lat,lng
 if(!s.includes(tileAnchor)) throw new Error('tile layer anchor not found');s=s.replace(tileAnchor,picker);
 if(!s.includes('<title>KPMAP</title>'))s=s.replace('<title>ROAD OPS</title>','<title>KPMAP</title>');
 if(!s.includes('<b>KPMAP // CHUGOKU</b>'))s=s.replace('<b>ROAD OPS // CHUGOKU</b>','<b>KPMAP // CHUGOKU</b>');
+s=s.replace('<b>KPMAP // CHUGOKU</b>','');
 fs.writeFileSync(p,s);
 console.log('Set KPMAP branding and Japanese color basemap');
 console.log('Kept all existing lat/lng geometry and map projection');
