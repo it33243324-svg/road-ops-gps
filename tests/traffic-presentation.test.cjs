@@ -13,3 +13,5 @@ assert.equal(p.eventAge('10:00'),'');
 assert.equal(p.eventAge('2026-10-03T01:00:00Z',Date.parse('2026-10-03T01:07:00Z')),'発生から7分');
 assert.equal(p.eventAge('2026-10-03T02:00:00Z',Date.parse('2026-10-03T01:07:00Z')),'');
 console.log('PASS: priority sections sorted by distance, pane ranking, radius and occurrence-time semantics');
+
+assert(p.isClosure({category:'ramp',detail:'入口閉鎖'}));assert(!p.isClosure({category:'ramp',detail:'車線規制'}));assert.equal(p.mapRank({category:'ramp',detail:'出口閉鎖',reason:'工事'}),0);

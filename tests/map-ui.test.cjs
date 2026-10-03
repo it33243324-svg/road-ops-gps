@@ -37,8 +37,10 @@ async function main(){
  assert.equal(doc.querySelector('#locationDirection').previousElementSibling.className,'location-main');
  assert(doc.querySelector('.next-facilities'),'Next facilities panel stays in the upper toolbar');
  assert.equal(doc.querySelector('.traffic-new'),null,'Initial events are not all new');
- map.setZoom(15,{animate:false});await wait(60);
- assert(doc.querySelector('.detail-label'),'Zoom reveals stored TN and bridge details');
+ map.setZoom(14,{animate:false});await wait(60);
+ assert(doc.querySelector('.detail-label'),'One wider zoom now reveals TN and bridge details');
+ assert.equal(w.getComputedStyle(doc.querySelector('.detail-label')).fontSize,'11px');
+ assert.equal(w.getComputedStyle(doc.querySelector('.facility')).fontSize,'12px');
  assert.equal(map.getPane('detailLabelPane').parentElement,map.getPane('markerPane').parentElement);
  assert(+map.getPane('detailLabelPane').style.zIndex<+map.getPane('kpPane').style.zIndex);
  map.setZoom(12,{animate:false});await wait(60);
@@ -117,6 +119,10 @@ async function main(){
  const center=map.latLngToContainerPoint(map.getCenter());
  const east=map.latLngToContainerPoint([map.getCenter().lat,map.getCenter().lng+.001]);
  assert(east.y<center.y&&Math.abs(east.x-center.x)<4,'East should render at the top');
+ const northMarker=Object.values(map._layers).find(x=>x.getElement?.()?.classList.contains('distance-compass-tag')&&x.getElement().textContent==='N');
+ assert(northMarker,'All four compass labels exist');
+ const north=map.latLngToContainerPoint(northMarker.getLatLng());assert(north.x<center.x&&Math.abs(north.y-center.y)<15,'N follows geographic north to the left when driving east');
+ assert.equal(Object.values(map._layers).find(x=>x.options?.pane==='distanceRingPane'&&x.getRadius).options.color,'#c94a58');
  const kp=doc.querySelector('.kplabel');kp.click();
  assert(w.eval('pickedKp')&&doc.querySelector('#gmap').disabled===false,'KP click and Google Map action must survive rotation');
  assert.equal(doc.querySelector('.kplabel.picked').closest('.leaflet-pane'),map.getPane('selectedKpPane'),'Selected KP must move above other overlays');
@@ -168,6 +174,8 @@ async function main(){
  const extra={...fixture.events.find(e=>e.road==='山陽道'),reason:'test-only changed event'};fixture.events.push(extra);await auto.fn();await wait(30);
  assert(doc.querySelector('.traffic-map-new'),'New traffic is visibly flagged on the map');
  now+=10*60000;await auto.fn();await wait(30);assert.equal(doc.querySelector('.traffic-map-new'),null,'Badge expires at ten minutes without feed resets');
+ fixture.events.push({...extra,category:'closed',categoryLabel:'通行止',reason:'test closure'});await auto.fn();await wait(30);
+ const closure=Object.values(map._layers).find(x=>x.getElement?.()?.querySelector('.closure'));assert(closure,'Closure icon uses a warning effect');assert.equal(closure.options.icon.options.iconSize[0],27,'Closure icon is 12.5 percent larger at wide zoom');assert(closure.getElement().querySelector('.closure-symbol').textContent==='×');closure.getElement().click();assert(closure.isPopupOpen(),'Effect must not block popup clicks');
  assert.deepEqual(errors,[]);
  console.log('PASS: complete real-data page, individual markers, existing KP/Google/facility controls, GPS walk/vehicle rules, heading projection, follow/pan, fullscreen fallback and refresh failure recovery');
  dom.window.close();

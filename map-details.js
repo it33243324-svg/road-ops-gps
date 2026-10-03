@@ -12,7 +12,7 @@
     }).map(x=>({...x,name:x.name.split(';').at(-1)}));
   });
   function draw(){
-    layer.clearLayers();if(map.getZoom()<15)return;
+    layer.clearLayers();if(map.getZoom()<14)return;
     const bounds=map.getBounds().pad(.3);
     for(const x of items){if(!bounds.contains(x.point))continue;
       const text=x.type==='tunnel'?x.name.replace(/トンネル$/,'TN'):x.name;

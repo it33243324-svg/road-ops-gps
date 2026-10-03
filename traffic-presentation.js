@@ -5,12 +5,16 @@
     const h = Math.sin(rad(b[0] - a[0]) / 2) ** 2 + Math.cos(rad(a[0])) * Math.cos(rad(b[0])) * Math.sin(rad(b[1] - a[1]) / 2) ** 2;
     return 12742 * Math.asin(Math.min(1, Math.sqrt(h)));
   };
+  function isClosure(e) {
+    return e.category==='closed'||(e.category==='ramp'&&/通行止|閉鎖|封鎖|閉塞/.test([e.title,e.reason,e.detail].join(' ')));
+  }
   function isRegulation(e) {
+    if(isClosure(e))return false;
     if (['closed', 'accident', 'broken', 'falling'].includes(e.category)) return false;
     return ['oneLane', 'laneRestriction', 'underRegulation', 'snowChain', 'snowTires', 'snowPlow', 'antifreeze'].includes(e.category) || /工事|作業|車線規制|交通規制/.test(e.reason || '');
   }
   function mapRank(e) {
-    if (e.category === 'closed') return 0;
+    if (isClosure(e)) return 0;
     if (e.category === 'accident') return 1;
     if (e.category === 'broken') return 2;
     if (e.category === 'falling') return 3;
@@ -30,7 +34,7 @@
     const minutes = Math.max(0, Math.floor((now - time) / 60000));
     return minutes < 1 ? '発生から1分未満' : '発生から' + minutes + '分';
   }
-  const api = { distanceKm, isRegulation, mapRank, nearbyGroups, eventAge };
+  const api = { distanceKm, isRegulation, isClosure, mapRank, nearbyGroups, eventAge };
   root.KPMAPTrafficPresentation = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);

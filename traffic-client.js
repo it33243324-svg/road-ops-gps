@@ -14,7 +14,7 @@
   const newTracker=KPMAPTrafficNew.create(savedNew);
   const newHtml=event=>newTracker.isNew(event)?'<span class="traffic-new">NEW</span>':'';
   const updated = document.getElementById('trafficUpdated');
-  const { distanceKm: km, isRegulation, mapRank, nearbyGroups, eventAge } = KPMAPTrafficPresentation;
+  const { distanceKm: km, isRegulation, isClosure, mapRank, nearbyGroups, eventAge } = KPMAPTrafficPresentation;
 
   const routeByName = { '山陽道': 'sanyo', '中国道': 'chugoku', '広島道': 'hiroshima', '広島岩国道路': 'hiroshima_iwakuni' };
   const escapeHtml = value => String(value || '').replace(/[&<>"']/g, c => ({
@@ -47,7 +47,7 @@
     const alternating = '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M9 27V6m-5 5 5-5 5 5M23 5v21m-5-5 5 5 5-5" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>';
     const symbols = { closed: '×', ramp: '×', accident: '!', broken: '!', falling: '!', jam: '渋' };
     const warning = ['accident', 'broken', 'falling', 'closed', 'ramp'].includes(category);
-    return { html: category === 'oneLane' ? alternating : isRestriction(event) ? lane : symbols[category] || '!', warning };
+    return { closure:isClosure(event), html: isClosure(event)?'×':category === 'oneLane' ? alternating : isRestriction(event) ? lane : symbols[category] || '!', warning };
   }
   function renderMap() {
     const uprightPane = map.getPane('markerPane').parentElement;
@@ -90,11 +90,12 @@
         uprightPane.appendChild(map.getPane(pane));
       }
       const sign = signFor(event);
+      const markerSize=Math.round((sign.closure?36:32)*scale);
       const icon = L.divIcon({
-        className: 'traffic-event-marker', iconSize: [size, size], iconAnchor: [size / 2, size / 2],
-        html: '<span class="traffic-pin' + (sign.warning ? ' warning' : '') +
+        className: 'traffic-event-marker', iconSize: [markerSize, markerSize], iconAnchor: [markerSize / 2, markerSize / 2],
+        html: '<span class="traffic-pin' + (sign.warning ? ' warning' : '') + (sign.closure ? ' closure effect-outline' : '') +
           '" style="transform:scale(' + scale + ');transform-origin:top left" role="img" aria-label="' +
-          escapeHtml(event.categoryLabel + (events.length > 1 ? '・交通情報' + events.length + '件' : '')) + '">' + sign.html + '</span>' + (events.length > 1 ? '<span class="traffic-cluster-count">' + events.length + '</span>' : '') + (events.some(e=>newTracker.isNew(e))?'<span class="traffic-map-new">NEW</span>':'')
+          escapeHtml(event.categoryLabel + (events.length > 1 ? '・交通情報' + events.length + '件' : '')) + '">' + (sign.closure?'<span class="closure-symbol">'+sign.html+'</span>':sign.html) + '</span>' + (events.length > 1 ? '<span class="traffic-cluster-count">' + events.length + '</span>' : '') + (events.some(e=>newTracker.isNew(e))?'<span class="traffic-map-new">NEW</span>':'')
       });
       const marker = L.marker(event.mapPoint, { pane, icon, zIndexOffset: 5000, keyboard: true,
         title: event.road + ' ' + event.categoryLabel + ' ' + event.title + (events.length > 1 ? '（交通情報' + events.length + '件）' : '') });

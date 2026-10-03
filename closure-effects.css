@@ -1,0 +1,22 @@
+.traffic-pin.closure{width:36px;height:36px;font-size:28px;border:3px solid #e53935;background:#fff000;color:#e53935;isolation:isolate}
+.closure::before,.closure::after{content:"";position:absolute;pointer-events:none;border-radius:inherit;box-sizing:border-box;z-index:-1}
+.effect-outline{animation:closure-outline 1.8s ease-in-out infinite}
+@keyframes closure-outline{0%,100%{box-shadow:0 0 0 2px #fff000,0 0 0 4px #e5393520}50%{border-color:#a81820;box-shadow:0 0 0 2px #fff000,0 0 0 6px #e5393560}}
+.effect-color{animation:closure-color 2.4s ease-in-out infinite}
+@keyframes closure-color{0%,100%{background:#fff000;color:#e53935}50%{background:#e53935;color:#fff;border-color:#fff}}
+.effect-wave:before,.effect-dual:before,.effect-dual:after{inset:-3px;border:2px solid #e53935;animation:closure-wave 2.4s ease-out infinite}
+.effect-dual:after{animation-delay:-1.2s}
+@keyframes closure-wave{0%{transform:scale(1);opacity:.7}100%{transform:scale(1.65);opacity:0}}
+.effect-corners:before{inset:-7px;border:2px dashed #e53935;animation:closure-corners 2.4s ease-in-out infinite}
+@keyframes closure-corners{0%,100%{opacity:.25;transform:scale(1)}50%{opacity:.9;transform:scale(1.1)}}
+.effect-breathe .closure-symbol{animation:closure-breathe 2.4s ease-in-out infinite}
+@keyframes closure-breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.14)}}
+.effect-double{animation:closure-double 2.4s ease-in-out infinite}
+@keyframes closure-double{0%,34%,58%,100%{box-shadow:0 0 0 2px #fff000}16%,46%{box-shadow:0 0 0 2px #fff000,0 0 0 6px #e5393560}}
+.effect-sweep{overflow:hidden}.effect-sweep:after{inset:-10px;background:linear-gradient(110deg,transparent 35%,#ffffffaa 48%,transparent 60%);animation:closure-sweep 2.4s linear infinite;z-index:1}
+@keyframes closure-sweep{0%{transform:translateX(-120%)}100%{transform:translateX(120%)}}
+.effect-halo{animation:closure-halo 2.4s ease-in-out infinite}
+@keyframes closure-halo{0%,100%{box-shadow:0 0 0 2px #fff000,0 0 6px #e5393530}50%{box-shadow:0 0 0 2px #fff000,0 0 15px #e53935cc}}
+.effect-stripe:before{inset:-6px;background:repeating-linear-gradient(135deg,#e5393570 0 3px,transparent 3px 7px);animation:closure-stripe 2.4s ease-in-out infinite}
+@keyframes closure-stripe{0%,100%{opacity:.2}50%{opacity:.8}}
+@media(prefers-reduced-motion:reduce){.traffic-pin.closure,.closure:before,.closure:after,.closure .closure-symbol{animation:none!important}.closure:before,.closure:after{display:none}.traffic-pin.closure{box-shadow:0 0 0 2px #fff000,0 0 0 4px #e5393540}}
