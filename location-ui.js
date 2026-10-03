@@ -101,8 +101,8 @@
     if (!accuracyCircle) accuracyCircle = L.circle(point, { radius: accuracy, color: '#ff304f', weight: 1, fillColor: '#ff304f', fillOpacity: .06, interactive: false }).addTo(here);
     else accuracyCircle.setLatLng(point).setRadius(accuracy);
 
-    if (firstFix) setDefaultView(point);
-    else if (requestedRecenter) map.setView(point, map.getZoom());
+    if (requestedRecenter) map.stop().setView(point, map.getZoom(), { animate: false });
+    else if (firstFix) setDefaultView(point);
     requestedRecenter = false;
     firstFix = false;
     const headingSource = finite(lastMotionHeading) ? lastHeadingSource : null;
@@ -120,10 +120,9 @@
   function onError(error) {
     vehicleSince = null; directionStatus = 'unavailable';
     previousSample = null;
-    if (error.code === 1) {
-      if (watchId !== null) navigator.geolocation?.clearWatch(watchId);
-      watchId = null;
-    }
+    if (watchId !== null) navigator.geolocation?.clearWatch(watchId);
+    watchId = null;
+    requestedRecenter = false;
     loc.disabled = false;
     loc.textContent = '現在地';
     const message = error.code === 1 ? '位置情報の使用が許可されていません' : '現在地を取得できません';
@@ -138,10 +137,17 @@
     }
     requestedRecenter = recenter;
     if (latest && recenter && Date.now() - latest.timestamp <= 30000) {
-      map.setView(latest.point, map.getZoom());
+      map.stop().setView(latest.point, map.getZoom(), { animate: false });
       requestedRecenter = false;
     }
+    // A watch can remain registered even after GPS stops delivering fixes.
+    // Explicit recenter must restart a stale watch instead of silently waiting.
+    if (recenter && (!latest || Date.now() - latest.timestamp > 30000) && watchId !== null) {
+      navigator.geolocation.clearWatch(watchId);
+      watchId = null;
+    }
     if (watchId !== null) return;
+    if (recenter) msg.textContent = '現在地を取得中です…';
     loc.disabled = true;
     loc.textContent = '取得中…';
     watchId = navigator.geolocation.watchPosition(

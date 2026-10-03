@@ -4,7 +4,7 @@ const {JSDOM,ResourceLoader,VirtualConsole}=require('jsdom');
 const dist=path.resolve(process.argv[2]||'dist');
 const leaflet=process.env.KPMAP_TEST_LEAFLET||require.resolve('leaflet/dist/leaflet.js');
 const fixture=JSON.parse(fs.readFileSync(path.join(__dirname,'fixtures/traffic-2026-10-03.json')));
-let gpsCallback,gpsError,gpsOptions,fetches=0,failFetch=false,intervals=[],errors=[],now=Date.now();
+let watchStarts=0,watchClears=0,gpsCallback,gpsError,gpsOptions,fetches=0,failFetch=false,intervals=[],errors=[],now=Date.now();
 class Resources extends ResourceLoader {
  fetch(url) {
   if(url.includes('/leaflet@1.9.4/dist/leaflet.js'))return Promise.resolve(fs.readFileSync(leaflet));
@@ -21,7 +21,7 @@ const dom=new JSDOM(fs.readFileSync(path.join(dist,'index.html'),'utf8'),{url:'h
  Object.defineProperties(w.HTMLElement.prototype,{clientWidth:{get(){return this.id==='m'?1280:1280;}},clientHeight:{get(){return this.id==='m'?(this.classList.contains('map-fullscreen')?900:640):900;}}});
  w.HTMLCanvasElement.prototype.getContext=function(){return new Proxy({canvas:this},{get:(o,k)=>k in o?o[k]:()=>{}});};
  w.fetch=async()=>{fetches++;if(failFetch)throw new Error('test offline');return {ok:true,json:async()=>JSON.parse(JSON.stringify(fixture))};};
- w.navigator.geolocation={watchPosition(callback,error,options){gpsCallback=callback;gpsError=error;gpsOptions=options;return 1;},clearWatch(){}};
+ w.navigator.geolocation={watchPosition(callback,error,options){watchStarts++;gpsCallback=callback;gpsError=error;gpsOptions=options;return 1;},clearWatch(){watchClears++;}};
  w.setInterval=(fn,ms)=>{intervals.push({fn,ms});return intervals.length;};
  Object.defineProperty(w.document,'hidden',{get:()=>false});
 }});
@@ -142,6 +142,10 @@ async function main(){
  const auto=intervals.find(x=>x.ms===60000);assert(auto);await auto.fn();await wait(30);
  assert(!doc.querySelector('#trafficUpdated').classList.contains('is-stale'));
  assert(fetches>=3,'Initial, manual and automatic requests must run');
+ const beforeRestart=watchStarts;now+=31000;
+ doc.querySelector('.map-recenter').click();assert(watchStarts>beforeRestart,'Stale watch must restart on recenter');assert(watchClears>0);
+ gps(34.4557,132.7252,0,0);assert(Math.abs(map.getCenter().lat-34.4557)<.0001,'Reacquired fix must recenter');
+ gpsError({code:3});const beforeTimeoutRetry=watchStarts;doc.querySelector('.map-recenter').click();assert(watchStarts>beforeTimeoutRetry,'Timeout must permit retry');
  assert.deepEqual(errors,[]);
  console.log('PASS: complete real-data page, individual markers, existing KP/Google/facility controls, GPS walk/vehicle rules, heading projection, follow/pan, fullscreen fallback and refresh failure recovery');
  dom.window.close();
