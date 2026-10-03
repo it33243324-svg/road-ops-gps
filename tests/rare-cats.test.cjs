@@ -10,7 +10,7 @@ vm.runInNewContext(fs.readFileSync(__dirname+'/../rare-cats.js','utf8'),ctx);
 assert.equal(timers[0].delay,60000,'Temporary live check begins after one minute');
 now=60000;timers.shift().fn();
 assert.equal(children.length,1);assert.equal((children[0].innerHTML.match(/class="kpmap-rare-cat/g)||[]).length,5);
-const cleanup=timers.shift();assert(cleanup.delay>10000&&cleanup.delay<12000);assert.equal((children[0].innerHTML.match(/is-flipped/g)||[]).length,2);assert.equal((children[0].innerHTML.match(/assets\/genba-cat.gif/g)||[]).length,5);cleanup.fn();assert.equal(children.length,0);
+const cleanup=timers.shift();assert(cleanup.delay>10000&&cleanup.delay<15000);assert.equal((children[0].innerHTML.match(/is-flipped/g)||[]).length,2);assert.equal((children[0].innerHTML.match(/assets\/genba-cat.gif/g)||[]).length,5);cleanup.fn();assert.equal(children.length,0);
 assert.equal(timers[0].delay,60000,'Next appearance is one minute later');
 now=120000;hidden=true;timers.shift().fn();assert.equal(children.length,0,'Background tab skips the effect');
 assert.equal(timers[0].delay,60000);

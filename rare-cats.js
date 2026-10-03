@@ -20,9 +20,9 @@
     active = document.createElement('div');
     active.className = 'kpmap-rare-cats';
     active.setAttribute('aria-hidden', 'true');
-    const size = window.innerWidth <= 600 ? 76 : 96;
+    const size = window.innerWidth <= 600 ? 88 : 112;
     const duration = (host.clientWidth + size * 2) / 180;
-    const interval = (size + 20) / 180;
+    const interval = (size + 40) / 180;
     active.style.setProperty('--cat-size', size + 'px');
     active.style.setProperty('--travel', duration + 's');
     active.innerHTML = Array.from({length:5},(_,i)=>'<span class="kpmap-rare-cat'+(i===1||i===3?' is-flipped':'')+'" style="--delay:'+i*interval+'s"><img src="assets/genba-cat.gif" alt="" draggable="false" decoding="async"></span>').join('');
@@ -52,11 +52,11 @@
   if (new URLSearchParams(window.location.search).get('catPreview') === '1') {
     show();
     clearTimeout(cleanupTimer);
-    const previewSize = window.innerWidth <= 600 ? 76 : 96;
-    const previewStart = Math.max(0, (host.clientWidth - (previewSize * 5 + 20 * 4)) / 2);
+    const previewSize = window.innerWidth <= 600 ? 88 : 112;
+    const previewStart = Math.max(0, (host.clientWidth - (previewSize * 5 + 40 * 4)) / 2);
     if (active) [...active.children].forEach((el,i)=>{
       el.style.animation = 'none';
-      el.style.left = (previewStart + (4 - i) * (previewSize + 20)) + 'px';
+      el.style.left = (previewStart + (4 - i) * (previewSize + 40)) + 'px';
 
     });
   }
