@@ -5,6 +5,16 @@
   const statusEl = document.getElementById('locationStatus');
   const noteEl = document.getElementById('locationNote');
   const routesData = typeof D !== 'undefined' ? D : {};
+  const panel = document.getElementById('locationPanel');
+  map.getContainer().appendChild(panel);
+  L.DomEvent.disableClickPropagation(panel);
+  L.DomEvent.disableScrollPropagation(panel);
+  function showDirection(text) {
+    const known = text === '上り' || text === '下り';
+    directionEl.textContent = known ? text : text === '判定中' ? '上り/下り　判定中' : '上り/下り　取得不可';
+    directionEl.classList.toggle('is-known', known);
+  }
+  showDirection('取得できません');
   const routeKeys = ['sanyo', 'chugoku', 'hiroshima', 'hiroshima_iwakuni'];
   const directionRules = { sanyo: 'down', chugoku: 'down', hiroshima: 'down', hiroshima_iwakuni: 'down' };
 
@@ -80,7 +90,7 @@
     const routes = routeKeys.map(key => ({ key, route: routesData[key], closest: routesData[key] && nearestOnRoute(routesData[key], point) }))
       .filter(item => item.route && item.closest).sort((a, b) => a.closest.distance - b.closest.distance);
     if (!routes.length) {
-      roadEl.textContent = '道路データがありません'; directionEl.textContent = '—'; kpEl.textContent = '—';
+      roadEl.textContent = '道路データがありません'; showDirection('取得できません'); kpEl.textContent = '—';
       statusEl.textContent = '未対応'; noteEl.textContent = 'この地域の高速道路データが見つかりませんでした。'; statusEl.classList.remove('ready'); return;
     }
     const selected = document.getElementById('r')?.value;
@@ -88,14 +98,14 @@
     const preferred = routes.find(item => item.key === selected && item.closest.distance <= closestDistance + 0.2);
     const match = preferred || routes[0];
     if (closestDistance > 5) {
-      roadEl.textContent = '対象の高速道路が近くにありません'; directionEl.textContent = '—'; kpEl.textContent = '—';
+      roadEl.textContent = '対象の高速道路が近くにありません'; showDirection('取得できません'); kpEl.textContent = '—';
       statusEl.textContent = '範囲外'; noteEl.textContent = '対象路線から約' + (Math.round(closestDistance * 10) / 10) + 'km離れています。'; statusEl.classList.remove('ready'); return;
     }
     const roadPoint = match.closest.point || point;
     const nearest = nearestKp(match.route, roadPoint);
     const direction = detail.directionStatus === 'judging' ? { text: '判定中', note: '40km/h以上の走行を30秒間確認しています。' } : getTravelDirection(match.key, match.route, roadPoint, Number.isFinite(detail.heading) ? detail.heading : NaN, detail.headingSource);
     roadEl.textContent = match.route.name + (match.route.code ? ' ' + match.route.code : '');
-    directionEl.textContent = direction.text;
+    showDirection(direction.text);
     kpEl.textContent = nearest ? Number(nearest.value).toFixed(1) + ' KP' : '—';
     statusEl.textContent = '現在地を取得'; statusEl.classList.add('ready');
     const accuracy = Number.isFinite(detail.accuracy) ? 'GPS精度 約' + Math.round(detail.accuracy) + 'm' : '';
@@ -106,7 +116,7 @@
   window.addEventListener('kpmap-location', event => locate(event.detail || {}));
   window.addEventListener('kpmap-location-error', event => {
     roadEl.textContent = '位置情報を許可すると表示します';
-    directionEl.textContent = '取得できません'; kpEl.textContent = '—';
+    showDirection('取得できません'); kpEl.textContent = '—';
     statusEl.textContent = '未取得'; statusEl.classList.remove('ready');
     noteEl.textContent = event.detail?.message || '現在地を取得できませんでした。';
   });

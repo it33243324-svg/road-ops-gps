@@ -32,6 +32,9 @@ async function main(){
  await until(()=>w.document.querySelector('.map-tool')&&w.document.querySelector('.traffic-event-marker'),'scripts');
  const doc=w.document,map=w.eval('map');
  assert.deepEqual(errors,[]);
+ assert.equal(doc.querySelector('#locationPanel').parentElement,doc.querySelector('#m'),'Location summary stays inside the map for fullscreen');
+ assert.equal(doc.querySelector('#locationKp').nextElementSibling,null);
+ assert.equal(doc.querySelector('#locationDirection').previousElementSibling.className,'location-main');
  assert.equal(doc.querySelector('#q').value,'');
  assert.equal(doc.querySelector('#gmap').disabled,true);
  assert.equal(doc.querySelector('#trafficRadius').value,'20');
@@ -72,7 +75,7 @@ async function main(){
  assert.equal(w.KPMAPLocation.getLatest().directionStatus,'judging','40km/h boundary counts');
  gps(34.4557,132.72121,1,90);
  gps(34.4557,132.72125,12,90);
- assert.equal(doc.querySelector('#locationDirection').textContent,'判定中');
+ assert.equal(doc.querySelector('#locationDirection').textContent,'上り/下り　判定中');
  assert.equal(w.KPMAPLocation.getLatest().heading,null,'One vehicle sample must not be sufficient');
  for(let second=1;second<30;second++)gps(34.4557,132.72125+second*.00013,12,90);
  assert.equal(w.KPMAPLocation.getLatest().heading,null,'29 seconds is not sufficient');
@@ -118,7 +121,7 @@ async function main(){
  assert(!doc.querySelector('#m').classList.contains('map-fullscreen'));
  tools[1].click();map.fire('dragstart');assert.equal(tools[1].getAttribute('aria-pressed'),'false','Manual pan stops following');
  gpsError({code:2});
- assert.equal(doc.querySelector('#locationDirection').textContent,'取得できません');
+ assert.equal(doc.querySelector('#locationDirection').textContent,'上り/下り　取得不可');
  const oldTime=doc.querySelector('#trafficUpdated').dateTime;
  failFetch=true;doc.querySelector('#trafficRefresh').click();await wait(30);
  assert.equal(doc.querySelectorAll('.traffic-event-marker').length,32,'Failed update preserves all old four-route traffic markers');
