@@ -106,3 +106,6 @@ fs.copyFileSync('f-key-preview.html', 'dist/f-key-preview.html');
 
 fs.mkdirSync('dist/assets',{recursive:true});
 fs.copyFileSync('assets/genba-cat.gif','dist/assets/genba-cat.gif');
+
+html = fs.readFileSync(file, 'utf8').replace('</style>', '.map-tools{position:relative;width:48px}.map-fullscreen-shortcut{position:absolute;left:58px;top:12px;display:flex;align-items:center;justify-content:center;width:24px;height:25px;box-sizing:border-box;border:1px solid #c8d3dd;border-bottom:3px solid #b6c5d0;border-radius:5px;background:#ffffffeb;color:#607787;font:800 12px system-ui;pointer-events:none!important;user-select:none}.map-fullscreen-shortcut:before,.map-fullscreen-shortcut:after{content:"";position:absolute;inset:-3px;border:1px solid #8da9ba;border-radius:7px;pointer-events:none;animation:kpmap-shortcut-wave 3.6s ease-out infinite}.map-fullscreen-shortcut:after{animation-delay:-1.8s}@keyframes kpmap-shortcut-wave{0%{opacity:.3;transform:scale(.95)}85%,100%{opacity:0;transform:scale(1.55)}}@media(prefers-reduced-motion:reduce){.map-fullscreen-shortcut:before,.map-fullscreen-shortcut:after{animation:none;opacity:0}}'+'</style>');
+fs.writeFileSync(file,html);

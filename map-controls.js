@@ -84,6 +84,10 @@
       return el;
     };
     fullButton = button('地図を全画面にする', expand, '全画面', toggleFullscreen);
+    fullButton.setAttribute('aria-keyshortcuts', 'F');
+    const shortcutHint = L.DomUtil.create('span', 'map-fullscreen-shortcut', group);
+    shortcutHint.textContent = 'F';
+    shortcutHint.setAttribute('aria-hidden', 'true');
     followButton = button('現在地を追いかける', followIcon, '追従', () => {
       following = !following;
       syncState();

@@ -66,6 +66,7 @@ async function main(){
  trafficMarker.getElement().click();
  assert(trafficMarker.isPopupOpen(),'Clicking the traffic icon must open its popup');
  trafficMarker.closePopup();
+ assert.equal(doc.querySelector('.map-fullscreen-shortcut').textContent,'F');assert.equal(w.getComputedStyle(doc.querySelector('.map-fullscreen-shortcut')).pointerEvents,'none');
  const tools=[...doc.querySelectorAll('.map-tool')];assert.equal(tools.length,3);
  assert(tools[0].title.includes('全画面')&&tools[1].title.includes('追いかけ')&&tools[2].title.includes('進行方向'));
  gps(34.4557,132.721,1,180);
