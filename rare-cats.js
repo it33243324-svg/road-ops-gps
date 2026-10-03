@@ -1,5 +1,6 @@
 (() => {
   'use strict';
+  const PREVIEW_EVERY_MINUTE = true; // Temporary user-requested live check; false restores hourly random timing.
   const hour = 60 * 60 * 1000;
   const openedAt = Date.now();
   const host = document.getElementById('m');
@@ -31,6 +32,15 @@
   // Exactly one randomly selected instant in each hour measured from page open.
   // Hidden occurrences are skipped, never accumulated for a return to the tab.
   function schedule(bucket) {
+    if (PREVIEW_EVERY_MINUTE) {
+      const minute = 60000;
+      const due = openedAt + (bucket + 1) * minute;
+      setTimeout(() => {
+        show();
+        schedule(Math.max(bucket + 1, Math.floor((Date.now() - openedAt) / minute)));
+      }, Math.max(0, due - Date.now()));
+      return;
+    }
     const due = openedAt + bucket * hour + Math.random() * hour;
     setTimeout(() => {
       show();
