@@ -52,6 +52,7 @@ async function main(){
  assert.equal(w.getComputedStyle(doc.querySelector('.location-road-stack')).flexDirection,'column');
  assert.equal(w.getComputedStyle(doc.querySelector('.location-main')).alignItems,'flex-end');
  assert.equal(w.getComputedStyle(doc.querySelector('.location-summary')).alignItems,'flex-end');
+ assert.equal(w.getComputedStyle(doc.querySelector('#locationKp')).lineHeight,w.getComputedStyle(doc.querySelector('#locationRoad')).lineHeight,'KP and road share a line box height');
  assert.equal(doc.querySelector('#locationDirection').previousElementSibling.className,'location-main');
  assert(doc.querySelector('.next-facilities'),'Next facilities panel stays in the upper toolbar');
  assert.equal(doc.querySelector('.traffic-new'),null,'Initial events are not all new');
