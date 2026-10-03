@@ -1,6 +1,6 @@
 (() => {
   'use strict';
-  const PREVIEW_EVERY_MINUTE = true; // Temporary user-requested live check; false restores hourly random timing.
+  const PREVIEW_EVERY_MINUTE = false; // Temporary user-requested live check; false restores hourly random timing.
   const hour = 60 * 60 * 1000;
   const openedAt = Date.now();
   const host = document.getElementById('m');
@@ -22,7 +22,7 @@
     active.setAttribute('aria-hidden', 'true');
     const size = window.innerWidth <= 600 ? 88 : 112;
     const duration = (host.clientWidth + size * 2) / 180;
-    const interval = (size + 40) / 180;
+    const interval = (size + 70) / 180;
     active.style.setProperty('--cat-size', size + 'px');
     active.style.setProperty('--travel', duration + 's');
     active.innerHTML = Array.from({length:5},(_,i)=>'<span class="kpmap-rare-cat'+(i===1||i===3?' is-flipped':'')+'" style="--delay:'+i*interval+'s"><img src="assets/genba-cat.gif" alt="" draggable="false" decoding="async"></span>').join('');
@@ -53,10 +53,10 @@
     show();
     clearTimeout(cleanupTimer);
     const previewSize = window.innerWidth <= 600 ? 88 : 112;
-    const previewStart = Math.max(0, (host.clientWidth - (previewSize * 5 + 40 * 4)) / 2);
+    const previewStart = Math.max(0, (host.clientWidth - (previewSize * 5 + 70 * 4)) / 2);
     if (active) [...active.children].forEach((el,i)=>{
       el.style.animation = 'none';
-      el.style.left = (previewStart + (4 - i) * (previewSize + 40)) + 'px';
+      el.style.left = (previewStart + (4 - i) * (previewSize + 70)) + 'px';
 
     });
   }

@@ -67,33 +67,16 @@
     }
     const scale = map.getZoom() < 13 ? .75 : map.getZoom() < 15 ? .875 : 1;
     const size = Math.round(32 * scale);
-    const grouped = new Map();
-    for (const event of trafficData) {
-      event.mapMarker = null;
-      if (!event.mapPoint) continue;
-      const key = event.mapPoint[0] + ',' + event.mapPoint[1];
-      if (!grouped.has(key)) grouped.set(key, []);
-      grouped.get(key).push(event);
-    }
-    const groups = [...grouped.values()].map(events => events.sort((a,b)=>mapRank(a)-mapRank(b)));
-    const representatives = groups.map(events=>events[0]);
-    // Screen-space offsets keep the true geographic anchor and preserve every event.
-    const occupied = [];
-    const offsets = new Map();
-    for (const event of representatives.slice().sort((a,b) => mapRank(a)-mapRank(b))) {
-      const anchor = map.latLngToContainerPoint(event.mapPoint);
-      let offset = [0,0];
-      for (let attempt=0; attempt<200; attempt++) {
-        if (attempt) {
-          const ring=Math.ceil(attempt/8), angle=((attempt-1)%8)*Math.PI/4;
-          offset=[Math.round(Math.cos(angle)*ring*(size+6)),Math.round(Math.sin(angle)*ring*(size+6))];
-        }
-        const candidate=[anchor.x+offset[0],anchor.y+offset[1]];
-        if (occupied.every(p=>Math.abs(p[0]-candidate[0])>=size+4 || Math.abs(p[1]-candidate[1])>=size+4)) {
-          occupied.push(candidate);break;
-        }
-      }
-      offsets.set(event,offset);
+    // Group nearby screen anchors; zooming in naturally separates distinct locations.
+    const groups = [];
+    for (const event of trafficData) event.mapMarker = null;
+    for (const event of trafficData.filter(e=>e.mapPoint).sort((a,b)=>mapRank(a)-mapRank(b))) {
+      const point = map.latLngToContainerPoint(event.mapPoint);
+      const group = groups.find(events=>{
+        const anchor=map.latLngToContainerPoint(events[0].mapPoint);
+        return Math.abs(anchor.x-point.x)<size+12 && Math.abs(anchor.y-point.y)<size+12;
+      });
+      if (group) group.push(event); else groups.push([event]);
     }
     for (const events of groups) {
       const event = events[0];
@@ -104,17 +87,15 @@
         uprightPane.appendChild(map.getPane(pane));
       }
       const sign = signFor(event);
-      const [dx,dy] = offsets.get(event);
-      const leader = dx || dy ? '<svg class="traffic-anchor-line" width="'+size+'" height="'+size+'"><line x1="'+(size/2-dx)+'" y1="'+(size/2-dy)+'" x2="'+size/2+'" y2="'+size/2+'" stroke="#fff" stroke-width="4"/><line x1="'+(size/2-dx)+'" y1="'+(size/2-dy)+'" x2="'+size/2+'" y2="'+size/2+'" stroke="#496476" stroke-width="1.5"/></svg>' : '';
       const icon = L.divIcon({
-        className: 'traffic-event-marker', iconSize: [size, size], iconAnchor: [size / 2 - dx, size / 2 - dy],
-        html: leader + '<span class="traffic-pin' + (sign.warning ? ' warning' : '') +
+        className: 'traffic-event-marker', iconSize: [size, size], iconAnchor: [size / 2, size / 2],
+        html: '<span class="traffic-pin' + (sign.warning ? ' warning' : '') +
           '" style="transform:scale(' + scale + ');transform-origin:top left" role="img" aria-label="' +
           escapeHtml(event.categoryLabel + (events.length > 1 ? '・交通情報' + events.length + '件' : '')) + '">' + sign.html + '</span>' + (events.length > 1 ? '<span class="traffic-cluster-count">' + events.length + '</span>' : '')
       });
       const marker = L.marker(event.mapPoint, { pane, icon, zIndexOffset: 5000, keyboard: true,
         title: event.road + ' ' + event.categoryLabel + ' ' + event.title + (events.length > 1 ? '（交通情報' + events.length + '件）' : '') });
-      marker.bindPopup(events.length > 1 ? '<strong>同じ位置の交通情報 ' + events.length + '件</strong>' + events.map(e=>'<div class="traffic-shared-event">'+popupHtml(e)+'</div>').join('') : popupHtml(event), { pane: 'trafficPopupPane' });
+      marker.bindPopup(events.length > 1 ? '<strong>近くの交通情報 ' + events.length + '件</strong>' + events.map(e=>'<div class="traffic-shared-event">'+popupHtml(e)+'</div>').join('') : popupHtml(event), { pane: 'trafficPopupPane' });
       marker.addTo(trafficLayer);
       events.forEach(e=>{e.mapMarker = marker;});
     }

@@ -41,7 +41,7 @@ async function main(){
  const resolved=fixture.events.filter(e=>['山陽道','中国道','広島道','広島岩国道路'].includes(e.road));
  const locator=require('../traffic-location.js');locator.resolveEvents(resolved,w.eval('D'),require('../traffic-landmarks.json'),{'山陽道':'sanyo','中国道':'chugoku','広島道':'hiroshima','広島岩国道路':'hiroshima_iwakuni'});
  const expectedMarkers=new Set(resolved.filter(e=>e.mapPoint).map(e=>e.mapPoint.join(','))).size;
- assert.equal(doc.querySelectorAll('.traffic-event-marker').length,expectedMarkers,'Only exactly equal coordinates share markers');
+ assert(doc.querySelectorAll('.traffic-event-marker').length<=expectedMarkers,'Nearby events can share markers');assert.equal(doc.querySelectorAll('.traffic-anchor-line').length,0,'Offset connector lines are removed');
  assert.equal([...doc.querySelectorAll('.traffic-event-marker')].reduce((n,e)=>n+(Number(e.querySelector('.traffic-cluster-count')?.textContent)||1),0),32,'All records are retained in visible counts');
  assert(doc.querySelector('.traffic-cluster-count'),'Equal coordinates have a visible count');
  assert.equal(doc.querySelectorAll('.facility').length,135,'Existing four-route facility labels must remain');
@@ -136,7 +136,7 @@ async function main(){
  assert.equal(doc.querySelector('#locationDirection').textContent,'上り/下り　取得不可');
  const oldTime=doc.querySelector('#trafficUpdated').dateTime;
  failFetch=true;doc.querySelector('#trafficRefresh').click();await wait(30);
- assert.equal(doc.querySelectorAll('.traffic-event-marker').length,expectedMarkers,'Failed update preserves all old four-route traffic markers');
+ assert.equal([...doc.querySelectorAll('.traffic-event-marker')].reduce((n,e)=>n+(Number(e.querySelector('.traffic-cluster-count')?.textContent)||1),0),32,'Failed update preserves every traffic record');
  assert.equal(doc.querySelector('#trafficUpdated').dateTime,oldTime,'Failed update must not claim a fresh timestamp');
  assert(doc.querySelector('#trafficUpdated').classList.contains('is-stale'));
  failFetch=false;
