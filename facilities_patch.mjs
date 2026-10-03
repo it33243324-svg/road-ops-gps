@@ -22,7 +22,7 @@ const layerAnchor="roads=L.layerGroup().addTo(map),sel=L.layerGroup().addTo(map)
 if(!s.includes(layerAnchor))throw new Error('facility layer anchor not found');s=s.replace(layerAnchor,"roads=L.layerGroup().addTo(map),sel=L.layerGroup().addTo(map),kp=L.layerGroup().addTo(map),fac=L.layerGroup().addTo(map),");
 
 const drawAnchor='function drawAll(){roads.clearLayers();';
-const drawFacilities=`function drawFacilities(){fac.clearLayers();for(const [k,v] of Object.entries(D))if(['sanyo','chugoku','hiroshima','hiroshima_iwakuni'].includes(k))for(const f of(v.facilities||[])){let cls=f.type.toLowerCase(),abbr=f.type==='JCT'?'J':f.type==='PA'?'P':f.type==='IC'?'I':'S',html='<div class="facility '+cls+'"><span class="dot">'+abbr+'</span><span class="fname">'+f.name+'</span></div>',ic=L.divIcon({className:'',html,iconSize:[0,0],iconAnchor:[0,0]});L.marker([f.lat,f.lng],{icon:ic,interactive:false,zIndexOffset:5000}).addTo(fac)}}function drawAll(){drawFacilities();roads.clearLayers();`;
+const drawFacilities=`function drawFacilities(){fac.clearLayers();for(const [k,v] of Object.entries(D))if(['sanyo','chugoku','hiroshima','hiroshima_iwakuni'].includes(k))for(const f of(v.facilities||[])){let cls=f.type.toLowerCase(),abbr=f.type==='JCT'?'J':f.type==='PA'?'P':f.type==='IC'?'I':'S',html='<div class="facility '+cls+'"><span class="dot">'+abbr+'</span><span class="fname">'+f.name+'</span></div>',ic=L.divIcon({className:'',html,iconSize:[0,0],iconAnchor:[0,0]});L.marker([f.lat,f.lng],{icon:ic,pane:'facilityPane',interactive:false,zIndexOffset:5000}).addTo(fac)}}function drawAll(){drawFacilities();roads.clearLayers();`;
 if(!s.includes(drawAnchor))throw new Error('facility draw anchor not found');s=s.replace(drawAnchor,drawFacilities);
 
 fs.writeFileSync(p,s);

@@ -47,7 +47,7 @@ async function main(){
  const doc=w.document,map=w.eval('map');
  assert.deepEqual(errors,[]);
  assert.equal(doc.querySelector('#locationPanel').parentElement,doc.querySelector('#m'),'Location summary stays inside the map for fullscreen');
- assert.equal(doc.querySelector('#locationKp').nextElementSibling,null);\n assert.equal(doc.querySelector('.location-kp-stack small').textContent,'最寄りKP');
+ assert.equal(doc.querySelector('#locationKp').nextElementSibling,null);\n assert.equal(doc.querySelector('.location-road-stack small').textContent,'最寄りKP');
  assert.equal(doc.querySelector('#locationDirection').previousElementSibling.className,'location-main');
  assert(doc.querySelector('.next-facilities'),'Next facilities panel stays in the upper toolbar');
  assert.equal(doc.querySelector('.traffic-new'),null,'Initial events are not all new');
@@ -81,7 +81,11 @@ async function main(){
  for(let i=0;i<centers.length;i++)for(let j=i+1;j<centers.length;j++)assert(Math.abs(centers[i][0]-centers[j][0])>=23 || Math.abs(centers[i][1]-centers[j][1])>=23,'Every traffic event must remain individually visible');
  const host=map.getPane('markerPane').parentElement;
  assert.equal(map.getPane('kpPane').parentElement,host);
- for(let rank=0;rank<=5;rank++){const pane=map.getPane('trafficPriority'+rank);if(pane){assert.equal(pane.parentElement,host);assert(+pane.style.zIndex>+map.getPane('kpPane').style.zIndex);}}
+ assert.equal(map.getPane('facilityPane').parentElement,host);
+ assert(+map.getPane('kpPane').style.zIndex<+map.getPane('facilityPane').style.zIndex,'Facilities sit above ordinary KP labels');
+ assert(+map.getPane('facilityPane').style.zIndex<+map.getPane('selectedKpPane').style.zIndex,'Selected KP labels stay above facilities');
+ assert.equal(doc.querySelector('.location-main').children[0].className,'location-road-stack');
+ for(let rank=0;rank<=5;rank++){const pane=map.getPane('trafficPriority'+rank);if(pane){assert.equal(pane.parentElement,host);assert(+pane.style.zIndex>+map.getPane('facilityPane').style.zIndex);}}
  assert(+map.getPane('trafficPopupPane').style.zIndex>+map.getPane('kpPane').style.zIndex);
  assert.equal(map.getPane('trafficPopupPane').parentElement,host);
  const sharedMarker=Object.values(map._layers).find(x=>x.getElement?.()?.querySelector('.traffic-cluster-count'));
