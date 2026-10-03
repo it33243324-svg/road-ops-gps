@@ -1,0 +1,18 @@
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const vm = require('node:vm');
+let now=0,hidden=false,reduced=false,random=.25;
+const timers=[],listeners={},children=[];
+const host={appendChild(n){children.push(n)}};
+const document={head:{appendChild(){}},get hidden(){return hidden},getElementById(){return host},createElement(){return {setAttribute(){},remove(){children.splice(children.indexOf(this),1)}}},addEventListener(k,fn){listeners[k]=fn}};
+const ctx={document,window:{matchMedia(){return {get matches(){return reduced},addEventListener(){}}}},Math:Object.assign(Object.create(Math),{random:()=>random}),Date:{now:()=>now},setTimeout(fn,delay){const t={fn,delay};timers.push(t);return t},clearTimeout(t){const i=timers.indexOf(t);if(i>=0)timers.splice(i,1)}};
+vm.runInNewContext(fs.readFileSync(__dirname+'/../rare-cats.js','utf8'),ctx);
+assert.equal(timers[0].delay,900000,'First appearance falls inside first hour');
+now=900000;timers.shift().fn();
+assert.equal(children.length,1);assert.equal((children[0].innerHTML.match(/class="kpmap-rare-cat"/g)||[]).length,5);
+const cleanup=timers.shift();assert.equal(cleanup.delay,16000);cleanup.fn();assert.equal(children.length,0);
+assert.equal(timers[0].delay,3600000,'Next appearance belongs to next hour bucket');
+now=4500000;hidden=true;timers.shift().fn();assert.equal(children.length,0,'Background tab skips the effect');
+assert.equal(timers[0].delay,3600000);
+now=8100000;hidden=false;reduced=true;timers.shift().fn();assert.equal(children.length,0,'Reduced motion is respected');
+console.log('PASS: hourly random windows, five cats, cleanup, hidden tabs and reduced motion');

@@ -94,3 +94,8 @@ console.log('Added JARTIC/iHighway traffic list below the map with 1-minute refr
 html = fs.readFileSync('dist/index.html','utf8');
 html = html.replace('</style>','#m .location-panel{background:#fff;border:2px solid #31556f;box-shadow:0 0 0 3px #ffffffbd,0 5px 18px #15394f40}#m .location-summary{font-weight:950}#m #locationDirection{color:#3f596b}.traffic-event-marker svg.traffic-anchor-line{position:absolute;overflow:visible;pointer-events:none;z-index:-1}'+'</style>');
 fs.writeFileSync('dist/index.html',html);
+
+// Keep the rare decoration independent of all map and traffic interactions.
+fs.copyFileSync('rare-cats.js', 'dist/rare-cats.js');
+html = fs.readFileSync(file, 'utf8').replace('</body>', '<script src="rare-cats.js"></script></body>');
+fs.writeFileSync(file, html);
