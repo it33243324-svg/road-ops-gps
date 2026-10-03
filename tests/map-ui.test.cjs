@@ -44,6 +44,10 @@ async function main(){
  assert(doc.querySelector('#trafficUpdated').textContent.includes('更新（取得時刻）'));
  assert.equal(doc.querySelectorAll('.traffic-age').length,0,'Fetch time must never be displayed as event age');
  assert(gpsOptions.enableHighAccuracy&&gpsOptions.maximumAge===0);
+ assert(doc.querySelector('#r').style.color,'Selected road uses its map color');
+ const trafficMarkers=Object.values(map._layers).filter(x=>x.options?.pane?.startsWith('trafficPriority'));
+ const centers=trafficMarkers.map(x=>{const p=map.latLngToContainerPoint(x.getLatLng()),a=x.options.icon.options.iconAnchor;return [p.x-a[0],p.y-a[1]]});
+ for(let i=0;i<centers.length;i++)for(let j=i+1;j<centers.length;j++)assert(Math.abs(centers[i][0]-centers[j][0])>=23 || Math.abs(centers[i][1]-centers[j][1])>=23,'Every traffic event must remain individually visible');
  const host=map.getPane('markerPane').parentElement;
  assert.equal(map.getPane('kpPane').parentElement,host);
  for(let rank=0;rank<=5;rank++){const pane=map.getPane('trafficPriority'+rank);if(pane){assert.equal(pane.parentElement,host);assert(+pane.style.zIndex>+map.getPane('kpPane').style.zIndex);}}
@@ -59,6 +63,7 @@ async function main(){
  const tools=[...doc.querySelectorAll('.map-tool')];assert.equal(tools.length,3);
  assert(tools[0].title.includes('全画面')&&tools[1].title.includes('追いかけ')&&tools[2].title.includes('進行方向'));
  gps(34.4557,132.721,1,180);
+ assert(!/E2|E74/.test(doc.querySelector('#locationRoad').textContent),'Road overlay omits route codes');
  assert.equal(w.KPMAPLocation.getLatest().heading,null,'Walking must not determine direction');
  const nearbyText=doc.querySelector('#trafficCount').textContent;
  assert(nearbyText.startsWith('2件'),'Nearby traffic radius must still work');

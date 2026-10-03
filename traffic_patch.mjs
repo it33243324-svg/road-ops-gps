@@ -90,3 +90,7 @@ fs.writeFileSync(file, html);
 console.log('Added JARTIC/iHighway traffic list below the map with 1-minute refresh');
 
 
+
+html = fs.readFileSync('dist/index.html','utf8');
+html = html.replace('</style>','#m .location-panel{background:#fff;border:2px solid #31556f;box-shadow:0 0 0 3px #ffffffbd,0 5px 18px #15394f40}#m .location-summary{font-weight:950}#m #locationDirection{color:#3f596b}.traffic-event-marker svg.traffic-anchor-line{position:absolute;overflow:visible;pointer-events:none;z-index:-1}'+'</style>');
+fs.writeFileSync('dist/index.html',html);

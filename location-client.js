@@ -104,7 +104,7 @@
     const roadPoint = match.closest.point || point;
     const nearest = nearestKp(match.route, roadPoint);
     const direction = detail.directionStatus === 'judging' ? { text: '判定中', note: '40km/h以上の走行を30秒間確認しています。' } : getTravelDirection(match.key, match.route, roadPoint, Number.isFinite(detail.heading) ? detail.heading : NaN, detail.headingSource);
-    roadEl.textContent = match.route.name + (match.route.code ? ' ' + match.route.code : '');
+    roadEl.textContent = match.route.name;
     showDirection(direction.text);
     kpEl.textContent = nearest ? Number(nearest.value).toFixed(1) + ' KP' : '—';
     statusEl.textContent = '現在地を取得'; statusEl.classList.add('ready');

@@ -62,11 +62,29 @@
       map.getPane('trafficPane').style.zIndex = '650';
     }
     if (!zoomHooked) {
-      map.on('zoomend', renderMap);
+      map.on('zoomend rotate', renderMap);
       zoomHooked = true;
     }
     const scale = map.getZoom() < 13 ? .75 : map.getZoom() < 15 ? .875 : 1;
     const size = Math.round(32 * scale);
+    // Screen-space offsets keep the true geographic anchor and preserve every event.
+    const occupied = [];
+    const offsets = new Map();
+    for (const event of trafficData.filter(e => e.mapPoint).sort((a,b) => mapRank(a)-mapRank(b))) {
+      const anchor = map.latLngToContainerPoint(event.mapPoint);
+      let offset = [0,0];
+      for (let attempt=0; attempt<200; attempt++) {
+        if (attempt) {
+          const ring=Math.ceil(attempt/8), angle=((attempt-1)%8)*Math.PI/4;
+          offset=[Math.round(Math.cos(angle)*ring*(size+6)),Math.round(Math.sin(angle)*ring*(size+6))];
+        }
+        const candidate=[anchor.x+offset[0],anchor.y+offset[1]];
+        if (occupied.every(p=>Math.abs(p[0]-candidate[0])>=size+4 || Math.abs(p[1]-candidate[1])>=size+4)) {
+          occupied.push(candidate);break;
+        }
+      }
+      offsets.set(event,offset);
+    }
     for (const event of trafficData) {
       event.mapMarker = null;
       if (!event.mapPoint) continue;
@@ -77,9 +95,11 @@
         uprightPane.appendChild(map.getPane(pane));
       }
       const sign = signFor(event);
+      const [dx,dy] = offsets.get(event);
+      const leader = dx || dy ? '<svg class="traffic-anchor-line" width="'+size+'" height="'+size+'"><line x1="'+(size/2-dx)+'" y1="'+(size/2-dy)+'" x2="'+size/2+'" y2="'+size/2+'" stroke="#fff" stroke-width="4"/><line x1="'+(size/2-dx)+'" y1="'+(size/2-dy)+'" x2="'+size/2+'" y2="'+size/2+'" stroke="#496476" stroke-width="1.5"/></svg>' : '';
       const icon = L.divIcon({
-        className: 'traffic-event-marker', iconSize: [size, size], iconAnchor: [size / 2, size / 2],
-        html: '<span class="traffic-pin' + (sign.warning ? ' warning' : '') +
+        className: 'traffic-event-marker', iconSize: [size, size], iconAnchor: [size / 2 - dx, size / 2 - dy],
+        html: leader + '<span class="traffic-pin' + (sign.warning ? ' warning' : '') +
           '" style="transform:scale(' + scale + ');transform-origin:top left" role="img" aria-label="' +
           escapeHtml(event.categoryLabel) + '">' + sign.html + '</span>'
       });

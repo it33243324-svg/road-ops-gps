@@ -56,6 +56,7 @@ if(!s.includes('<title>KPMAP</title>'))s=s.replace('<title>ROAD OPS</title>','<t
 if(!s.includes('<b>KPMAP // CHUGOKU</b>'))s=s.replace('<b>ROAD OPS // CHUGOKU</b>','<b>KPMAP // CHUGOKU</b>');
 s=s.replace('<b>KPMAP // CHUGOKU</b>','');
 s=s.replace("v.name+' '+v.code",'v.name');
+s=s.replace('function drawSelected(fit=false){',"function drawSelected(fit=false){r.style.color=D[r.value].color;r.style.borderColor=D[r.value].color;r.style.fontWeight='900';Array.from(r.options).forEach(o=>{o.style.color=D[o.value].color});");
 fs.writeFileSync(p,s);
 console.log('Set KPMAP branding and Japanese color basemap');
 console.log('Kept all existing lat/lng geometry and map projection');
