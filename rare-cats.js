@@ -49,5 +49,14 @@
   }
   document.addEventListener('visibilitychange', () => { if (document.hidden) clear(); });
   motion?.addEventListener?.('change', () => { if (motion.matches) clear(); });
+  if (new URLSearchParams(window.location.search).get('catPreview') === '1') {
+    show();
+    clearTimeout(cleanupTimer);
+    if (active) [...active.children].forEach((el,i)=>{
+      el.style.animation = 'none';
+      el.style.left = (12 + i*18) + '%';
+      el.querySelector('svg').style.animation = 'none';
+    });
+  }
   schedule(0);
 })();

@@ -67,10 +67,20 @@
     }
     const scale = map.getZoom() < 13 ? .75 : map.getZoom() < 15 ? .875 : 1;
     const size = Math.round(32 * scale);
+    const grouped = new Map();
+    for (const event of trafficData) {
+      event.mapMarker = null;
+      if (!event.mapPoint) continue;
+      const key = event.mapPoint[0] + ',' + event.mapPoint[1];
+      if (!grouped.has(key)) grouped.set(key, []);
+      grouped.get(key).push(event);
+    }
+    const groups = [...grouped.values()].map(events => events.sort((a,b)=>mapRank(a)-mapRank(b)));
+    const representatives = groups.map(events=>events[0]);
     // Screen-space offsets keep the true geographic anchor and preserve every event.
     const occupied = [];
     const offsets = new Map();
-    for (const event of trafficData.filter(e => e.mapPoint).sort((a,b) => mapRank(a)-mapRank(b))) {
+    for (const event of representatives.slice().sort((a,b) => mapRank(a)-mapRank(b))) {
       const anchor = map.latLngToContainerPoint(event.mapPoint);
       let offset = [0,0];
       for (let attempt=0; attempt<200; attempt++) {
@@ -85,9 +95,8 @@
       }
       offsets.set(event,offset);
     }
-    for (const event of trafficData) {
-      event.mapMarker = null;
-      if (!event.mapPoint) continue;
+    for (const events of groups) {
+      const event = events[0];
       const rank = mapRank(event), pane = 'trafficPriority' + rank;
       if (!map.getPane(pane)) {
         map.createPane(pane);
@@ -101,13 +110,13 @@
         className: 'traffic-event-marker', iconSize: [size, size], iconAnchor: [size / 2 - dx, size / 2 - dy],
         html: leader + '<span class="traffic-pin' + (sign.warning ? ' warning' : '') +
           '" style="transform:scale(' + scale + ');transform-origin:top left" role="img" aria-label="' +
-          escapeHtml(event.categoryLabel) + '">' + sign.html + '</span>'
+          escapeHtml(event.categoryLabel + (events.length > 1 ? '・交通情報' + events.length + '件' : '')) + '">' + sign.html + '</span>' + (events.length > 1 ? '<span class="traffic-cluster-count">' + events.length + '</span>' : '')
       });
       const marker = L.marker(event.mapPoint, { pane, icon, zIndexOffset: 5000, keyboard: true,
-        title: event.road + ' ' + event.categoryLabel + ' ' + event.title });
-      marker.bindPopup(popupHtml(event), { pane: 'trafficPopupPane' });
+        title: event.road + ' ' + event.categoryLabel + ' ' + event.title + (events.length > 1 ? '（交通情報' + events.length + '件）' : '') });
+      marker.bindPopup(events.length > 1 ? '<strong>同じ位置の交通情報 ' + events.length + '件</strong>' + events.map(e=>'<div class="traffic-shared-event">'+popupHtml(e)+'</div>').join('') : popupHtml(event), { pane: 'trafficPopupPane' });
       marker.addTo(trafficLayer);
-      event.mapMarker = marker;
+      events.forEach(e=>{e.mapMarker = marker;});
     }
     const placed = trafficData.filter(e => e.mapPoint).length;
     meta.textContent = '地図 ' + placed + '件 ・ 一覧は現在地周辺' + (placed < trafficData.length ? ' ・ 位置未確認 ' + (trafficData.length - placed) + '件' : '');

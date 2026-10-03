@@ -38,8 +38,12 @@ async function main(){
  assert.equal(doc.querySelector('#q').value,'');
  assert.equal(doc.querySelector('#gmap').disabled,true);
  assert.equal(doc.querySelector('#trafficRadius').value,'20');
- assert.equal(doc.querySelectorAll('.traffic-event-marker').length,32,'Every real event needs its own marker');
- assert.equal(doc.querySelectorAll('.traffic-cluster-count').length,0,'Clusters must be removed');
+ const resolved=fixture.events.filter(e=>['山陽道','中国道','広島道','広島岩国道路'].includes(e.road));
+ const locator=require('../traffic-location.js');locator.resolveEvents(resolved,w.eval('D'),require('../traffic-landmarks.json'),{'山陽道':'sanyo','中国道':'chugoku','広島道':'hiroshima','広島岩国道路':'hiroshima_iwakuni'});
+ const expectedMarkers=new Set(resolved.filter(e=>e.mapPoint).map(e=>e.mapPoint.join(','))).size;
+ assert.equal(doc.querySelectorAll('.traffic-event-marker').length,expectedMarkers,'Only exactly equal coordinates share markers');
+ assert.equal([...doc.querySelectorAll('.traffic-event-marker')].reduce((n,e)=>n+(Number(e.querySelector('.traffic-cluster-count')?.textContent)||1),0),32,'All records are retained in visible counts');
+ assert(doc.querySelector('.traffic-cluster-count'),'Equal coordinates have a visible count');
  assert.equal(doc.querySelectorAll('.facility').length,135,'Existing four-route facility labels must remain');
  assert(doc.querySelector('#trafficUpdated').textContent.includes('更新（取得時刻）'));
  assert.equal(doc.querySelectorAll('.traffic-age').length,0,'Fetch time must never be displayed as event age');
@@ -53,6 +57,8 @@ async function main(){
  for(let rank=0;rank<=5;rank++){const pane=map.getPane('trafficPriority'+rank);if(pane){assert.equal(pane.parentElement,host);assert(+pane.style.zIndex>+map.getPane('kpPane').style.zIndex);}}
  assert(+map.getPane('trafficPopupPane').style.zIndex>+map.getPane('kpPane').style.zIndex);
  assert.equal(map.getPane('trafficPopupPane').parentElement,host);
+ const sharedMarker=Object.values(map._layers).find(x=>x.getElement?.()?.querySelector('.traffic-cluster-count'));
+ sharedMarker.openPopup();assert.equal(sharedMarker.getPopup().getElement().querySelectorAll('.traffic-shared-event').length,Number(sharedMarker.getElement().querySelector('.traffic-cluster-count').textContent),'Shared popup includes every event');sharedMarker.closePopup();
  const trafficMarker=[...map._layers?Object.values(map._layers):[]].find(x=>x.options?.pane?.startsWith('trafficPriority'));
  trafficMarker.openPopup();
  assert.equal(trafficMarker.getPopup().getElement().parentElement,map.getPane('trafficPopupPane'),'Popup must share the KP stacking context at a higher level');
@@ -129,7 +135,7 @@ async function main(){
  assert.equal(doc.querySelector('#locationDirection').textContent,'上り/下り　取得不可');
  const oldTime=doc.querySelector('#trafficUpdated').dateTime;
  failFetch=true;doc.querySelector('#trafficRefresh').click();await wait(30);
- assert.equal(doc.querySelectorAll('.traffic-event-marker').length,32,'Failed update preserves all old four-route traffic markers');
+ assert.equal(doc.querySelectorAll('.traffic-event-marker').length,expectedMarkers,'Failed update preserves all old four-route traffic markers');
  assert.equal(doc.querySelector('#trafficUpdated').dateTime,oldTime,'Failed update must not claim a fresh timestamp');
  assert(doc.querySelector('#trafficUpdated').classList.contains('is-stale'));
  failFetch=false;

@@ -5,7 +5,7 @@ let now=0,hidden=false,reduced=false,random=.25;
 const timers=[],listeners={},children=[];
 const host={appendChild(n){children.push(n)}};
 const document={head:{appendChild(){}},get hidden(){return hidden},getElementById(){return host},createElement(){return {setAttribute(){},remove(){children.splice(children.indexOf(this),1)}}},addEventListener(k,fn){listeners[k]=fn}};
-const ctx={document,window:{matchMedia(){return {get matches(){return reduced},addEventListener(){}}}},Math:Object.assign(Object.create(Math),{random:()=>random}),Date:{now:()=>now},setTimeout(fn,delay){const t={fn,delay};timers.push(t);return t},clearTimeout(t){const i=timers.indexOf(t);if(i>=0)timers.splice(i,1)}};
+const ctx={URLSearchParams,document,window:{location:{search:''},matchMedia(){return {get matches(){return reduced},addEventListener(){}}}},Math:Object.assign(Object.create(Math),{random:()=>random}),Date:{now:()=>now},setTimeout(fn,delay){const t={fn,delay};timers.push(t);return t},clearTimeout(t){const i=timers.indexOf(t);if(i>=0)timers.splice(i,1)}};
 vm.runInNewContext(fs.readFileSync(__dirname+'/../rare-cats.js','utf8'),ctx);
 assert.equal(timers[0].delay,900000,'First appearance falls inside first hour');
 now=900000;timers.shift().fn();
