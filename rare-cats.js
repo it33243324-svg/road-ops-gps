@@ -42,9 +42,11 @@
   if (new URLSearchParams(window.location.search).get('catPreview') === '1') {
     show();
     clearTimeout(cleanupTimer);
+    const previewSize = window.innerWidth <= 600 ? 76 : 96;
+    const previewStart = Math.max(0, (host.clientWidth - (previewSize * 5 + 8 * 4)) / 2);
     if (active) [...active.children].forEach((el,i)=>{
       el.style.animation = 'none';
-      el.style.left = (12 + i*18) + '%';
+      el.style.left = (previewStart + i * (previewSize + 8)) + 'px';
 
     });
   }
