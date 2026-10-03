@@ -39,14 +39,14 @@
       const marker=L.marker(x.point,{pane:'detailLabelPane',interactive:false,keyboard:false,icon:L.divIcon({className:'detail-label-marker',iconSize:[0,0],iconAnchor:[0,0],html:'<span class="detail-label'+(vertical?' detail-vertical':'')+'" style="--detail-angle:'+rotation+'deg" title="'+escape(x.name)+'">'+escape(text)+'</span>'})}).addTo(layer);
       const span=marker.getElement()?.querySelector('.detail-label');if(!span)continue;
       const p=map.latLngToContainerPoint(x.point),rad=angle*Math.PI/180,tx=Math.cos(rad),ty=Math.sin(rad),nx=-ty,ny=tx;
-      const offsets=[[0,19],[0,-19],[24,25],[-24,25],[24,-25],[-24,-25],[0,40],[0,-40],[42,40],[-42,40],[42,-40],[-42,-40],[72,25],[-72,25],[72,-25],[-72,-25],[96,25],[-96,25],[96,-25],[-96,-25],[0,72],[0,-72],[0,96],[0,-96]];
+      const offsets=[[0,5],[0,-5],[6,8],[-6,8],[6,-8],[-6,-8],[12,10],[-12,10],[12,-10],[-12,-10],[0,18],[0,-18],[18,14],[-18,14],[18,-14],[-18,-14],[0,20],[0,-20]];
       let chosen=null,score=Infinity;
       for(const [along,side] of offsets){
         const q=L.point(p.x+tx*along+nx*side,p.y+ty*along+ny*side);marker.setLatLng(map.containerPointToLatLng(q));
         const r=span.getBoundingClientRect();
         const hits=occupied.filter(o=>intersects(r,o)).length;
         const clipped=r.width&&(r.left<root.left||r.right>root.right||r.top<root.top||r.bottom>root.bottom)?2:0;
-        if(hits+clipped<score){score=hits+clipped;chosen=q;}if(score===0)break;
+        const gap=Math.abs(along)+Math.abs(side)*.7,cost=hits*.4+clipped*100+gap*.1;if(cost<score){score=cost;chosen=q;}if(score===0)break;
       }
       if(chosen)marker.setLatLng(map.containerPointToLatLng(chosen));
       const rect=span.getBoundingClientRect();if(rect.width&&rect.height)occupied.push(rect);

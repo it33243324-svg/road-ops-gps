@@ -26,6 +26,20 @@ const dom=new JSDOM(fs.readFileSync(path.join(dist,'index.html'),'utf8'),{url:'h
  Object.defineProperty(w.document,'hidden',{get:()=>false});
 }});
 const w=dom.window,wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+const builtHtml=fs.readFileSync(path.join(dist,'index.html'),'utf8');
+const dataStart=builtHtml.indexOf('const D=')+8;
+assert(dataStart>=8,'Built route data is embedded in the map page');
+let depth=0,inString=false,escaped=false,dataEnd=-1;
+for(let i=dataStart;i<builtHtml.length;i++){const c=builtHtml[i];if(inString){if(escaped)escaped=false;else if(c.charCodeAt(0)===92)escaped=true;else if(c==='"')inString=false;}else if(c==='"')inString=true;else if(c==='{')depth++;else if(c==='}'&&--depth===0){dataEnd=i+1;break;}}
+assert(dataEnd>dataStart,'Built route data is valid JSON');
+const routeData=JSON.parse(builtHtml.slice(dataStart,dataEnd)),hi=routeData.hiroshima_iwakuni;
+assert.equal(hi.quality,'osm-road-aligned');
+assert.equal(hi.marks.length,26,'Hiroshima-Iwakuni keeps its existing 0–2.5 KP range');
+assert(Math.abs(hi.segs[0][0][0]-34.3451588)<.0001&&Math.abs(hi.segs[0][0][1]-132.3131984)<.0001,'Route starts at Hatsukaichi IC');
+assert(Math.abs(hi.segs[0].at(-1)[0]-34.336845)<.0001&&Math.abs(hi.segs[0].at(-1)[1]-132.294527)<.0001,'Route ends at Hatsukaichi JCT');
+let routeKm=0;for(let i=1;i<hi.segs[0].length;i++){const a=hi.segs[0][i-1],b=hi.segs[0][i];routeKm+=12742*Math.asin(Math.sqrt(Math.sin((b[0]-a[0])*Math.PI/360)**2+Math.cos(a[0]*Math.PI/180)*Math.cos(b[0]*Math.PI/180)*Math.sin((b[1]-a[1])*Math.PI/360)**2));}
+assert(routeKm>1.9&&routeKm<2.5,'Corrected IC–JCT geometry follows the roughly 2km branch');
+
 async function until(check,label){for(let i=0;i<100;i++){if(check())return;await wait(20);}throw new Error('Timed out: '+label);}
 function gps(lat,lon,speed,heading,accuracy=8){now+=1000;gpsCallback({timestamp:now,coords:{latitude:lat,longitude:lon,speed,heading,accuracy}});}
 async function main(){
@@ -33,7 +47,7 @@ async function main(){
  const doc=w.document,map=w.eval('map');
  assert.deepEqual(errors,[]);
  assert.equal(doc.querySelector('#locationPanel').parentElement,doc.querySelector('#m'),'Location summary stays inside the map for fullscreen');
- assert.equal(doc.querySelector('#locationKp').nextElementSibling,null);
+ assert.equal(doc.querySelector('#locationKp').nextElementSibling,null);\n assert.equal(doc.querySelector('.location-kp-stack small').textContent,'最寄りKP');
  assert.equal(doc.querySelector('#locationDirection').previousElementSibling.className,'location-main');
  assert(doc.querySelector('.next-facilities'),'Next facilities panel stays in the upper toolbar');
  assert.equal(doc.querySelector('.traffic-new'),null,'Initial events are not all new');

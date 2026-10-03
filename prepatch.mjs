@@ -3,14 +3,13 @@ const p='build.mjs';
 let s=fs.readFileSync(p,'utf8');
 const old=`// 広島岩国道路はE2山陽道と同一路面を通るため、山陽道の高精度固定線形から廿日市〜大竹区間を抽出する。
 if(DATA.sanyo?.segs?.length&&DATA.hiroshima_iwakuni){const hi=[];for(const seg of DATA.sanyo.segs){const pts=seg.filter(p=>p[0]>=34.235&&p[0]<=34.365&&p[1]>=132.205&&p[1]<=132.345);if(pts.length>1)hi.push(pts)}if(hi.length){DATA.hiroshima_iwakuni.segs=hi;DATA.hiroshima_iwakuni.quality='official-derived'}}`;
-const neu=`// ROAD OPS独自定義: 広島岩国道路は廿日市IC〜廿日市JCTだけを扱う。
+const neu=`// OSM道路中心線に合わせて廿日市IC〜廿日市JCTの線形を修正。山陽道と重なる区間は二重描画しない。
 if(DATA.hiroshima_iwakuni){
- const branch=[[34.34519,132.31322],[34.34555,132.31055],[34.34525,132.30775],[34.34435,132.30475],[34.34295,132.30185],[34.34105,132.29910],[34.33905,132.29685],[34.336845,132.294527]];
- const c=cum(branch), total=c.at(-1);
- DATA.hiroshima_iwakuni.segs=[branch];
- DATA.hiroshima_iwakuni.marks=[];
- for(let k=0;k<=2.5+1e-8;k+=.1){const p=at(branch,c,(k/2.5)*total);DATA.hiroshima_iwakuni.marks.push([+k.toFixed(1),+p[0].toFixed(6),+p[1].toFixed(6)])}
- DATA.hiroshima_iwakuni.quality='roadops-custom';
+ const line=[[34.3451588,132.3131984],[34.3451267,132.3121834],[34.3451106,132.3116759],[34.3450769,132.3105652],[34.3450635,132.3102579],[34.344812,132.308439],[34.3443762,132.306996],[34.3434756,132.3051443],[34.3388148,132.2984286],[34.3364604,132.2958663],[34.3362869,132.2949904],[34.3367262,132.2942577],[34.336845,132.294527]];
+ const c=cum(line),total=c.at(-1);
+ DATA.hiroshima_iwakuni.segs=[line];DATA.hiroshima_iwakuni.marks=[];
+ for(let k=0;k<=2.5+1e-8;k+=.1){const p=at(line,c,(k/2.5)*total);DATA.hiroshima_iwakuni.marks.push([+k.toFixed(1),+p[0].toFixed(6),+p[1].toFixed(6)])}
+ DATA.hiroshima_iwakuni.quality='osm-road-aligned';
 }`;
 if(!s.includes(old)) throw new Error('target patch block not found');s=s.replace(old,neu);
 const dataAnchor="if(!DATA.chugoku||DATA.chugoku.marks.length<2)throw Error('中国道KP固定データの生成に失敗しました');";
