@@ -25,7 +25,7 @@
   if(typeof module!=='undefined'&&module.exports)module.exports=root.KPMAPNextFacilities;
   if(typeof document==='undefined')return;
   const panel=document.createElement('aside');panel.className='next-facilities';panel.setAttribute('aria-label','進行方向の次のIC・PA');panel.innerHTML='<strong>次のIC・PA</strong><span>現在地・進行方向を確認すると表示</span>';
-  document.querySelector('.top').appendChild(panel);
+  document.querySelector('.mapactions').appendChild(panel);
   window.addEventListener('kpmap-road-location',event=>{
     const d=event.detail;
     panel.replaceChildren();const title=document.createElement('strong');title.textContent='次のIC・PA';panel.appendChild(title);
