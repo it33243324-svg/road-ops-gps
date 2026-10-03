@@ -48,7 +48,7 @@ module.exports = async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
   try {
-    const upstream = await fetch(SOURCE_URL, { headers: { 'User-Agent': 'KPMAP/1.0 traffic display' }, signal: AbortSignal.timeout(12000) });
+    const upstream = await fetch(SOURCE_URL, { cache: 'no-store', headers: { 'User-Agent': 'KPMAP/1.0 traffic display', 'Cache-Control': 'no-cache' }, signal: AbortSignal.timeout(12000) });
     if (!upstream.ok) throw new Error('upstream status ' + upstream.status);
     const raw = await upstream.json();
     const area = raw?.[AREA_KEY];
@@ -62,3 +62,4 @@ module.exports = async function handler(req, res) {
     return res.status(502).json({ error: '交通情報を取得できませんでした', detail: String(error?.message || error) });
   }
 };
+

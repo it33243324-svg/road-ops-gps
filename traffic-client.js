@@ -54,6 +54,14 @@
     return { html: category === 'oneLane' ? alternating : isRestriction(event) ? lane : symbols[category] || '!', warning };
   }
   function renderMap() {
+    const uprightPane = map.getPane('markerPane').parentElement;
+    const kpPane = map.getPane('kpPane');
+    if (kpPane && kpPane.parentElement !== uprightPane) uprightPane.appendChild(kpPane);
+    if (!map.getPane('trafficPopupPane')) {
+      map.createPane('trafficPopupPane');
+      map.getPane('trafficPopupPane').style.zIndex = '750';
+      uprightPane.appendChild(map.getPane('trafficPopupPane'));
+    }
     if (trafficLayer) trafficLayer.clearLayers();
     else trafficLayer = L.layerGroup().addTo(map);
     if (!map.getPane('trafficPane')) {
@@ -73,6 +81,7 @@
       if (!map.getPane(pane)) {
         map.createPane(pane);
         map.getPane(pane).style.zIndex = String(660 - rank);
+        uprightPane.appendChild(map.getPane(pane));
       }
       const sign = signFor(event);
       const icon = L.divIcon({
@@ -83,7 +92,7 @@
       });
       const marker = L.marker(event.mapPoint, { pane, icon, zIndexOffset: 5000, keyboard: true,
         title: event.road + ' ' + event.categoryLabel + ' ' + event.title });
-      marker.bindPopup(popupHtml(event));
+      marker.bindPopup(popupHtml(event), { pane: 'trafficPopupPane' });
       marker.addTo(trafficLayer);
       event.mapMarker = marker;
     }
@@ -182,7 +191,7 @@
   radiusSelect.addEventListener('change', renderList);
   refresh.addEventListener('click', load);
   load();
-  setInterval(() => { if (!document.hidden) load(); }, 300000);
+  setInterval(() => { if (!document.hidden) load(); }, 60000);
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden && Date.now() - lastSuccessfulFetch >= 30000) load();
   });

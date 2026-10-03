@@ -62,7 +62,7 @@
   }
 
   function getTravelDirection(routeKey, route, point, heading, detailHeadingSource) {
-    if (!Number.isFinite(heading)) return { text: '取得できません', note: '車で約25km/h以上の走行をGPSで確認すると判定します。歩行中のGPSは判定に使いません。' };
+    if (!Number.isFinite(heading)) return { text: '取得できません', note: '40km/h以上で30秒以上の走行をGPSで確認すると判定します。歩行中のGPSは判定に使いません。' };
     if (!(routeKey in directionRules)) return { text: '判定対象外', note: 'この路線は上り・下りの自動判定に対応していません。' };
     const routeBearing = increasingKpBearing(route, point);
     if (!Number.isFinite(routeBearing)) return { text: '判定できません', note: '道路の方向を確認できませんでした。' };
@@ -93,7 +93,7 @@
     }
     const roadPoint = match.closest.point || point;
     const nearest = nearestKp(match.route, roadPoint);
-    const direction = getTravelDirection(match.key, match.route, roadPoint, Number.isFinite(detail.heading) ? detail.heading : NaN, detail.headingSource);
+    const direction = detail.directionStatus === 'judging' ? { text: '判定中', note: '40km/h以上の走行を30秒間確認しています。' } : getTravelDirection(match.key, match.route, roadPoint, Number.isFinite(detail.heading) ? detail.heading : NaN, detail.headingSource);
     roadEl.textContent = match.route.name + (match.route.code ? ' ' + match.route.code : '');
     directionEl.textContent = direction.text;
     kpEl.textContent = nearest ? Number(nearest.value).toFixed(1) + ' KP' : '—';
@@ -106,7 +106,9 @@
   window.addEventListener('kpmap-location', event => locate(event.detail || {}));
   window.addEventListener('kpmap-location-error', event => {
     roadEl.textContent = '位置情報を許可すると表示します';
+    directionEl.textContent = '取得できません'; kpEl.textContent = '—';
     statusEl.textContent = '未取得'; statusEl.classList.remove('ready');
     noteEl.textContent = event.detail?.message || '現在地を取得できませんでした。';
   });
 })();
+

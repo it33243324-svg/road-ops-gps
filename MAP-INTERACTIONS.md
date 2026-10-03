@@ -15,7 +15,7 @@ The display helper accepts only an explicit absolute `occurredAt` timestamp if a
 future validated source provides it. A failed update preserves prior data and its
 timestamp, marks the failed refresh, and retries at the normal schedule.
 
-Traffic refreshes every five minutes while the page is visible. Returning to the
+Traffic refreshes every minute while the page is visible. Returning to the
 page refreshes if the last successful fetch is at least 30 seconds old; coming back
 online also refreshes. Mobile browsers can suspend hidden tabs or locked screens;
 this is not a background service or push-notification implementation.
@@ -35,7 +35,7 @@ GPS remains high accuracy and now requests uncached fixes (`maximumAge: 0`).
 Old/out-of-order results, implausible leaps and briefly degraded accuracy are
 filtered. Only tiny stationary jitter is damped; moving vehicles retain their GPS
 coordinates. No artificial road snapping or promise of hardware precision is made.
-The existing vehicle direction gate (about 25 km/h, two confirming samples) is
+The vehicle direction gate (40 km/h or more for at least 30 seconds of continuous good fixes) is
 preserved; walking never changes travel direction. Position marker/wave DOM is
 reused so GPS updates do not restart its ripple animation.
 
@@ -64,3 +64,5 @@ unknown occurrence times, fresh GPS, walk/car direction, rotated coordinate
 projection, KP click/input/jump/Google controls, 135 existing facility labels,
 follow/manual-pan, fullscreen fallback and refresh-failure recovery. Live GPS
 precision and mobile OS fullscreen behavior still depend on the user's device.
+
+Fullscreen controls move 10 px inward, respecting device safe areas; the Google Map action sits beside zoom with the original selection ripple. F toggles fullscreen outside editable fields; Escape still exits. Location road/direction/KP occupy one row. Custom KP, location and traffic panes share the upright marker stacking context, with traffic above KP and its popups above labels. Direction confirmation shows 判定中; errors and insufficient evidence show 取得できません. Speed below 40 km/h or gaps over 10 seconds restart the 30-second confirmation. The API requests uncached upstream data; one-minute polling is independent of the upstream publication schedule.

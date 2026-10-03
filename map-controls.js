@@ -22,8 +22,9 @@
     headingButton.title = headingUp ? '北を上に戻す' : '車の進行方向を上にする';
     headingButton.setAttribute('aria-label', headingButton.title);
     headingButton.querySelector('span').textContent = headingUp ? '進行↑' : '北↑';
-    const recentHeading = latest && Number.isFinite(latest.heading) && Number.isFinite(latest.headingTimestamp) && Date.now() - latest.headingTimestamp <= 60000;
-    status.textContent = following ? !latest ? '現在地を取得中' : headingUp ? recentHeading ? '進行方向を上にして追従中' : '追従中・車両の走行方向を確認中' : '現在地に追従中' : '';
+    const recentHeading = latest && latest.directionStatus !== 'judging' && Number.isFinite(latest.heading) && Number.isFinite(latest.headingTimestamp) && Date.now() - latest.headingTimestamp <= 60000;
+    const directionMessage = latest?.directionStatus === 'judging' ? '追従中・進行方向は判定中（40km/h以上・30秒）' : '追従中・進行方向は取得できません';
+    status.textContent = following ? !latest ? '現在地を取得中' : headingUp ? recentHeading ? '進行方向を上にして追従中' : directionMessage : '現在地に追従中' : '';
     status.hidden = !following;
   }
   function applyView() {
@@ -121,6 +122,10 @@
   document.querySelectorAll('.chip').forEach(el => el.addEventListener('click', pauseFollow));
   document.addEventListener('fullscreenchange', syncFullscreen);
   document.addEventListener('keydown', e => {
+    const editing = e.target?.closest?.('input,textarea,select,[contenteditable]:not([contenteditable="false"])');
+    if (e.key?.toLowerCase() === 'f' && !e.repeat && !e.ctrlKey && !e.metaKey && !e.altKey && !editing) {
+      e.preventDefault(); toggleFullscreen(); return;
+    }
     if (e.key === 'Escape' && fullscreenFallback) { fullscreenFallback = false; syncFullscreen(); }
   });
   let rotateLabels = 0;
@@ -133,16 +138,17 @@
   syncState();
 
   // Keep the existing Google Map action available while only the map is fullscreen.
-  const fullAction = L.control({ position: 'bottomright' });
+  const fullAction = L.control({ position: 'topleft' });
   let fullGoogle, selectedLabel;
   function syncSelected() {
     fullGoogle.disabled = gmap.disabled;
+    fullGoogle.classList.toggle('gmap-selected-action', !gmap.disabled);
     selectedLabel.textContent = typeof pickedKp !== 'undefined' && pickedKp ? pickedKp[2].toFixed(1) + ' KP 選択中' : 'KPを選択してください';
   }
   fullAction.onAdd = () => {
     const panel = L.DomUtil.create('div', 'map-fullscreen-action');
     selectedLabel = L.DomUtil.create('span', '', panel);
-    fullGoogle = L.DomUtil.create('button', '', panel);
+    fullGoogle = L.DomUtil.create('button', 'map-fullscreen-google', panel);
     fullGoogle.type = 'button'; fullGoogle.textContent = 'Google Map';
     fullGoogle.onclick = () => gmap.click();
     L.DomEvent.disableClickPropagation(panel); L.DomEvent.disableScrollPropagation(panel);

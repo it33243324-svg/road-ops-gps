@@ -5,14 +5,16 @@
   let lastMotionHeading = null;
   let lastHeadingSource = null;
   let headingTimestamp = null;
-  let vehicleEvidence = 0;
+  let vehicleSince = null;
+  let directionStatus = 'unavailable';
   let firstFix = true;
   let locationMarker = null;
   let accuracyCircle = null;
   let requestedRecenter = false;
 
-  const MIN_VEHICLE_SPEED = 7; // m/s ≈ 25 km/h
-  const MIN_TRACK_SPEED = 8; // m/s ≈ 29 km/h
+  const MIN_VEHICLE_SPEED = 40 / 3.6;
+  const MIN_TRACK_SPEED = MIN_VEHICLE_SPEED;
+  const VEHICLE_CONFIRM_MS = 30000;
 
   const finite = value => Number.isFinite(value);
   const rad = value => value * Math.PI / 180;
@@ -34,6 +36,10 @@
     let vehicleCandidate = false;
     let candidateHeading = null;
     let candidateSource = null;
+    if (finite(accuracy) && accuracy <= 35 && finite(speed) && speed >= MIN_VEHICLE_SPEED &&
+        finite(heading) && heading >= 0 && heading < 360) {
+      vehicleCandidate = true; candidateHeading = heading; candidateSource = 'vehicle-gps';
+    }
     if (previousSample) {
       const elapsed = (position.timestamp - previousSample.time) / 1000;
       const goodAccuracy = finite(accuracy) && accuracy <= 35;
@@ -49,7 +55,7 @@
           candidateHeading = bearing(previousSample.point, point);
           candidateSource = 'vehicle-track';
         }
-      } else if (goodAccuracy && accuracy <= 25 && previousSample.accuracy <= 25 && elapsed >= 1 && elapsed <= 10 &&
+      } else if (!finite(speed) && goodAccuracy && accuracy <= 25 && previousSample.accuracy <= 25 && elapsed >= 1 && elapsed <= 10 &&
                  moved / elapsed >= MIN_TRACK_SPEED && moved <= elapsed * 45) {
         // Some devices omit coords.speed; infer vehicle movement only from
         // sustained, accurate GPS fixes at highway-like speeds.
@@ -59,22 +65,27 @@
       }
     }
 
+    const continuous = previousSample && position.timestamp - previousSample.time <= 10000;
     if (vehicleCandidate && finite(candidateHeading)) {
-      vehicleEvidence += 1;
-      if (vehicleEvidence >= 2) {
+      if (vehicleSince === null || !continuous) vehicleSince = position.timestamp;
+      directionStatus = 'judging';
+      if (position.timestamp - vehicleSince >= VEHICLE_CONFIRM_MS) {
         lastMotionHeading = candidateHeading;
         headingTimestamp = position.timestamp;
         lastHeadingSource = candidateSource;
+        directionStatus = 'ready';
       }
     } else {
-      vehicleEvidence = 0;
+      vehicleSince = null;
+      directionStatus = finite(lastMotionHeading) ? 'ready' : 'unavailable';
     }
     previousSample = { point, time: position.timestamp, accuracy };
-    latest = { point, accuracy, speed, heading: lastMotionHeading, headingSource: lastHeadingSource, timestamp: position.timestamp, headingTimestamp };
+    latest = { point, accuracy, speed, heading: lastMotionHeading, headingSource: lastHeadingSource, timestamp: position.timestamp, headingTimestamp, directionStatus };
 
     if (!map.getPane('locationPane')) {
       map.createPane('locationPane');
       map.getPane('locationPane').style.zIndex = '700';
+      map.getPane('markerPane').parentElement.appendChild(map.getPane('locationPane'));
     }
     const arrow = finite(lastMotionHeading) ? lastMotionHeading : 0;
     const icon = L.divIcon({
@@ -97,16 +108,18 @@
     const headingSource = finite(lastMotionHeading) ? lastHeadingSource : null;
     window.dispatchEvent(new CustomEvent('kpmap-location', { detail: {
       lat: latitude, lng: longitude, heading: lastMotionHeading, headingSource,
-      speed, accuracy, timestamp: position.timestamp, headingTimestamp
+      speed, accuracy, timestamp: position.timestamp, headingTimestamp, directionStatus
     }}));
     loc.disabled = false;
     loc.textContent = '現在地';
     msg.textContent = '現在地を表示しました（精度 約' + Math.round(accuracy || 0) + 'm' +
-      (finite(lastMotionHeading) ? '・車両走行時の方向を保持' : '・車両走行を確認中') + '）';
+      (directionStatus === 'judging' ? '・進行方向は判定中' : finite(lastMotionHeading) ? '・車両走行時の方向を保持' : '・進行方向は取得できません') + '）';
     labels();
   }
 
   function onError(error) {
+    vehicleSince = null; directionStatus = 'unavailable';
+    previousSample = null;
     if (error.code === 1) {
       if (watchId !== null) navigator.geolocation?.clearWatch(watchId);
       watchId = null;
