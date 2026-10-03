@@ -39,7 +39,7 @@
       const marker=L.marker(x.point,{pane:'detailLabelPane',interactive:false,keyboard:false,icon:L.divIcon({className:'detail-label-marker',iconSize:[0,0],iconAnchor:[0,0],html:'<span class="detail-label'+(vertical?' detail-vertical':'')+'" style="--detail-angle:'+rotation+'deg" title="'+escape(x.name)+'">'+escape(text)+'</span>'})}).addTo(layer);
       const span=marker.getElement()?.querySelector('.detail-label');if(!span)continue;
       const p=map.latLngToContainerPoint(x.point),rad=angle*Math.PI/180,tx=Math.cos(rad),ty=Math.sin(rad),nx=-ty,ny=tx;
-      const offsets=[[0,19],[0,-19],[24,25],[-24,25],[24,-25],[-24,-25],[0,40],[0,-40],[42,40],[-42,40],[42,-40],[-42,-40]];
+      const offsets=[[0,19],[0,-19],[24,25],[-24,25],[24,-25],[-24,-25],[0,40],[0,-40],[42,40],[-42,40],[42,-40],[-42,-40],[72,25],[-72,25],[72,-25],[-72,-25],[96,25],[-96,25],[96,-25],[-96,-25],[0,72],[0,-72],[0,96],[0,-96]];
       let chosen=null,score=Infinity;
       for(const [along,side] of offsets){
         const q=L.point(p.x+tx*along+nx*side,p.y+ty*along+ny*side);marker.setLatLng(map.containerPointToLatLng(q));
