@@ -7,7 +7,7 @@
   if (!host) return;
   const motion = window.matchMedia?.('(prefers-reduced-motion: reduce)');
   const style = document.createElement('style');
-  style.textContent = '.kpmap-rare-cats,.kpmap-rare-cats *{pointer-events:none!important;user-select:none!important}.kpmap-rare-cats{position:absolute;inset:0;overflow:hidden;z-index:810}.kpmap-rare-cat{position:absolute;left:calc(-1 * var(--cat-size));top:50%;transform:translateY(-50%);width:var(--cat-size);height:var(--cat-size);animation:kpmap-cat-cross var(--travel) linear both;animation-delay:var(--delay)}.kpmap-rare-cat img{display:block;width:100%;height:100%;object-fit:contain}.kpmap-rare-cat.is-flipped img{transform:scaleX(-1)}@keyframes kpmap-cat-cross{to{left:calc(100% + var(--cat-size))}}@media(prefers-reduced-motion:reduce){.kpmap-rare-cats{display:none}}';
+  style.textContent = '.kpmap-rare-cats,.kpmap-rare-cats *{pointer-events:none!important;user-select:none!important}.kpmap-rare-cats{position:absolute;inset:0;overflow:hidden;z-index:810;mix-blend-mode:multiply}.kpmap-rare-cat{position:absolute;left:calc(100% + var(--cat-size));top:50%;transform:translateY(-50%);width:var(--cat-size);height:var(--cat-size);animation:kpmap-cat-cross var(--travel) linear both;animation-delay:var(--delay)}.kpmap-rare-cat img{display:block;width:100%;height:100%;object-fit:contain}.kpmap-rare-cat.is-flipped img{transform:scaleX(-1)}@keyframes kpmap-cat-cross{to{left:calc(-1 * var(--cat-size))}}@media(prefers-reduced-motion:reduce){.kpmap-rare-cats{display:none}}';
   document.head.appendChild(style);
   let active = null;
   let cleanupTimer = null;
@@ -56,7 +56,7 @@
     const previewStart = Math.max(0, (host.clientWidth - (previewSize * 5 + 8 * 4)) / 2);
     if (active) [...active.children].forEach((el,i)=>{
       el.style.animation = 'none';
-      el.style.left = (previewStart + i * (previewSize + 8)) + 'px';
+      el.style.left = (previewStart + (4 - i) * (previewSize + 8)) + 'px';
 
     });
   }
