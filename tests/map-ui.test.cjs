@@ -50,6 +50,9 @@ async function main(){
  trafficMarker.openPopup();
  assert.equal(trafficMarker.getPopup().getElement().parentElement,map.getPane('trafficPopupPane'),'Popup must share the KP stacking context at a higher level');
  trafficMarker.closePopup();
+ trafficMarker.getElement().click();
+ assert(trafficMarker.isPopupOpen(),'Clicking the traffic icon must open its popup');
+ trafficMarker.closePopup();
  const tools=[...doc.querySelectorAll('.map-tool')];assert.equal(tools.length,3);
  assert(tools[0].title.includes('全画面')&&tools[1].title.includes('追いかけ')&&tools[2].title.includes('進行方向'));
  gps(34.4557,132.721,1,180);
