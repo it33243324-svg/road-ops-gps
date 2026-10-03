@@ -6,4 +6,6 @@ assert.deepEqual(next(route,5,'下り').map(x=>x.facility.name),['東IC','東PA'
 assert.deepEqual(next(route,5,'上り').map(x=>x.facility.name),['西IC','西SA']);
 assert.deepEqual(next(route,5,'判定中'),[]);assert.deepEqual(next(route,5,'取得できません'),[]);
 assert(next(route,5,'下り').every(x=>x.distance>0));
+const combined={...route,facilities:[{name:'共用PA/SIC',type:'SIC',lat:34,lng:132.06},...route.facilities]};
+const result=next(combined,5,'下り');assert.equal(result[0].facility.name,'共用PA/SIC');assert.deepEqual(result[0].kinds,['IC','PA・SA'],'Combined smart IC/service facilities fulfill both roles without duplicate cards');
 console.log('PASS: projected KP distance, both directions, next IC/service selection and no guess before direction confirmation');

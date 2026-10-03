@@ -13,13 +13,12 @@
   function next(route,currentKp,direction){
     if(!['上り','下り'].includes(direction))return [];
     const marks=(route.marks||[]).slice().sort((a,b)=>a[0]-b[0]),sign=direction==='下り'?1:-1;
-    const seen=new Set();
     const candidates=(route.facilities||[]).map(f=>({facility:f,projection:projectKp(marks,[f.lat,f.lng])})).filter(x=>x.projection&&x.projection.distance<=2)
       .map(x=>({...x,distance:(x.projection.kp-currentKp)*sign})).filter(x=>x.distance>.15).sort((a,b)=>a.distance-b.distance);
     const results=[];
     for(const group of [['IC','SIC'],['PA','SA']]){
-      const match=candidates.find(x=>group.includes(x.facility.type)&&!seen.has(x.facility.name));
-      if(match){seen.add(match.facility.name);results.push(match);}
+      const match=candidates.find(x=>group.includes(x.facility.type)||(group.includes('PA')&&/PA|SA/.test(x.facility.name)));
+      if(match){const kind=group.includes('PA')?'PA・SA':'IC';const existing=results.find(x=>x.facility===match.facility);if(existing)existing.kinds.push(kind);else results.push({...match,kinds:[kind]});}
     }return results;
   }
   root.KPMAPNextFacilities={projectKp,next};
@@ -35,7 +34,7 @@
     if(!['上り','下り'].includes(d.direction)){text.textContent=d.direction==='判定中'?'進行方向を判定中…':'進行方向の取得待ち';return;}
     const list=next(D[d.routeKey],d.kp,d.direction);
     text.textContent=D[d.routeKey].name+' '+d.direction;
-    for(const x of list){const item=document.createElement('span');item.className='next-facility-item';item.textContent=x.facility.name+'  約'+x.distance.toFixed(1)+'km';item.title='現在地KPと施設付近の推定KPとの差。参考距離です。';panel.appendChild(item);}
+    for(const x of list){const item=document.createElement('span');item.className='next-facility-item';item.textContent=x.kinds.join(' / ')+'：'+x.facility.name+'  約'+x.distance.toFixed(1)+'km';item.title='現在地KPと施設付近の推定KPとの差。参考距離です。';panel.appendChild(item);}
     if(!list.length)text.textContent+=' ・ 前方の施設データなし';
   });
   window.addEventListener('kpmap-location-error',()=>{panel.innerHTML='<strong>次のIC・PA</strong><span>現在地・進行方向の取得待ち</span>';});
