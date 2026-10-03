@@ -4,8 +4,12 @@
   let previousSample = null;
   let lastMotionHeading = null;
   let lastHeadingSource = null;
+  let headingTimestamp = null;
   let vehicleEvidence = 0;
   let firstFix = true;
+  let locationMarker = null;
+  let accuracyCircle = null;
+  let requestedRecenter = false;
 
   const MIN_VEHICLE_SPEED = 7; // m/s ≈ 25 km/h
   const MIN_TRACK_SPEED = 8; // m/s ≈ 29 km/h
@@ -22,7 +26,9 @@
     Math.cos(rad(a[0])) * Math.sin(rad(b[0])) - Math.sin(rad(a[0])) * Math.cos(rad(b[0])) * Math.cos(rad(b[1] - a[1]))
   ) * 180 / Math.PI + 360) % 360;
 
-  function showPosition(position, recenter = false) {
+  function showPosition(incoming) {
+    const position = KPMAPLocationQuality.chooseFix(incoming, previousSample);
+    if (!position) return;
     const { latitude, longitude, accuracy, heading, speed } = position.coords;
     const point = [latitude, longitude];
     let vehicleCandidate = false;
@@ -36,14 +42,14 @@
 
       if (gpsSpeedConfirmsVehicle) {
         vehicleCandidate = true;
-        if (finite(heading) && heading >= 0) {
+        if (finite(heading) && heading >= 0 && heading < 360) {
           candidateHeading = heading;
           candidateSource = 'vehicle-gps';
-        } else if (elapsed >= 1 && elapsed <= 10 && moved >= 5) {
+        } else if (previousSample.accuracy <= 35 && elapsed >= 1 && elapsed <= 10 && moved >= Math.max(5, accuracy * .5)) {
           candidateHeading = bearing(previousSample.point, point);
           candidateSource = 'vehicle-track';
         }
-      } else if (goodAccuracy && accuracy <= 25 && elapsed >= 1 && elapsed <= 10 &&
+      } else if (goodAccuracy && accuracy <= 25 && previousSample.accuracy <= 25 && elapsed >= 1 && elapsed <= 10 &&
                  moved / elapsed >= MIN_TRACK_SPEED && moved <= elapsed * 45) {
         // Some devices omit coords.speed; infer vehicle movement only from
         // sustained, accurate GPS fixes at highway-like speeds.
@@ -57,34 +63,41 @@
       vehicleEvidence += 1;
       if (vehicleEvidence >= 2) {
         lastMotionHeading = candidateHeading;
+        headingTimestamp = position.timestamp;
         lastHeadingSource = candidateSource;
       }
     } else {
       vehicleEvidence = 0;
     }
-    previousSample = { point, time: position.timestamp };
-    latest = { point, accuracy, speed };
+    previousSample = { point, time: position.timestamp, accuracy };
+    latest = { point, accuracy, speed, heading: lastMotionHeading, headingSource: lastHeadingSource, timestamp: position.timestamp, headingTimestamp };
 
     if (!map.getPane('locationPane')) {
       map.createPane('locationPane');
       map.getPane('locationPane').style.zIndex = '700';
     }
-    here.clearLayers();
     const arrow = finite(lastMotionHeading) ? lastMotionHeading : 0;
     const icon = L.divIcon({
       className: '', iconSize: [52, 52], iconAnchor: [26, 26],
-      html: '<div style="width:52px;height:52px;position:relative;"><span class="location-wave"></span><span class="location-wave second"></span></div><div style="width:52px;height:52px;position:absolute;left:0;top:0;filter:drop-shadow(0 2px 4px #00101888);transform:rotate(' + arrow + 'deg)"><div style="position:absolute;left:20px;top:0;width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-bottom:20px solid #ff304f"></div><div style="position:absolute;left:10px;top:10px;width:32px;height:32px;box-sizing:border-box;border-radius:50%;background:#ff304f;border:4px solid white;box-shadow:0 0 0 2px #ff304f55"></div></div>'
+      html: '<div style="width:52px;height:52px;position:relative;"><span class="location-wave"></span><span class="location-wave second"></span></div><div class="location-direction-arrow" style="width:52px;height:52px;position:absolute;left:0;top:0;filter:drop-shadow(0 2px 4px #00101888);transform:rotate(' + arrow + 'deg)"><div style="position:absolute;left:20px;top:0;width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-bottom:20px solid #ff304f"></div><div style="position:absolute;left:10px;top:10px;width:32px;height:32px;box-sizing:border-box;border-radius:50%;background:#ff304f;border:4px solid white;box-shadow:0 0 0 2px #ff304f55"></div></div>'
     });
-    L.marker(point, { icon, pane: 'locationPane', zIndexOffset: 10000 }).addTo(here);
-    if (finite(accuracy)) L.circle(point, { radius: accuracy, color: '#ff304f', weight: 2, fillColor: '#ff304f', fillOpacity: .08, interactive: false }).addTo(here);
+    if (!locationMarker) locationMarker = L.marker(point, { icon, pane: 'locationPane', zIndexOffset: 10000, rotateWithView: true, interactive: false }).addTo(here);
+    else {
+      locationMarker.setLatLng(point);
+      const arrowElement = locationMarker.getElement()?.querySelector('.location-direction-arrow');
+      if (arrowElement) arrowElement.style.transform = 'rotate(' + arrow + 'deg)';
+    }
+    if (!accuracyCircle) accuracyCircle = L.circle(point, { radius: accuracy, color: '#ff304f', weight: 1, fillColor: '#ff304f', fillOpacity: .06, interactive: false }).addTo(here);
+    else accuracyCircle.setLatLng(point).setRadius(accuracy);
 
     if (firstFix) setDefaultView(point);
-    else if (recenter) map.setView(point, map.getZoom());
+    else if (requestedRecenter) map.setView(point, map.getZoom());
+    requestedRecenter = false;
     firstFix = false;
     const headingSource = finite(lastMotionHeading) ? lastHeadingSource : null;
     window.dispatchEvent(new CustomEvent('kpmap-location', { detail: {
       lat: latitude, lng: longitude, heading: lastMotionHeading, headingSource,
-      speed, accuracy
+      speed, accuracy, timestamp: position.timestamp, headingTimestamp
     }}));
     loc.disabled = false;
     loc.textContent = '現在地';
@@ -94,8 +107,10 @@
   }
 
   function onError(error) {
-    if (watchId !== null) navigator.geolocation?.clearWatch(watchId);
-    watchId = null;
+    if (error.code === 1) {
+      if (watchId !== null) navigator.geolocation?.clearWatch(watchId);
+      watchId = null;
+    }
     loc.disabled = false;
     loc.textContent = '現在地';
     const message = error.code === 1 ? '位置情報の使用が許可されていません' : '現在地を取得できません';
@@ -108,19 +123,21 @@
       onError({ code: 2 });
       return;
     }
-    if (latest && recenter) {
+    requestedRecenter = recenter;
+    if (latest && recenter && Date.now() - latest.timestamp <= 30000) {
       map.setView(latest.point, map.getZoom());
-      return;
+      requestedRecenter = false;
     }
     if (watchId !== null) return;
     loc.disabled = true;
     loc.textContent = '取得中…';
     watchId = navigator.geolocation.watchPosition(
       position => showPosition(position), onError,
-      { enableHighAccuracy: true, maximumAge: 5000, timeout: 20000 }
+      { enableHighAccuracy: true, maximumAge: 0, timeout: 20000 }
     );
   }
 
+  window.KPMAPLocation = { request: requestLocation, getLatest: () => latest };
   loc.onclick = () => requestLocation(true);
   const recenterControl = L.control({ position: 'topleft' });
   recenterControl.onAdd = () => {
@@ -137,3 +154,4 @@
   recenterControl.addTo(map);
   requestLocation(false);
 })();
+

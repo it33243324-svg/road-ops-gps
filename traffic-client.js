@@ -9,6 +9,9 @@
   let userLocation = null;
   let trafficLayer = null;
   let zoomHooked = false;
+  let lastSuccessfulFetch = 0;
+  const updated = document.getElementById('trafficUpdated');
+  const { distanceKm: km, isRegulation, mapRank, nearbyGroups, eventAge } = KPMAPTrafficPresentation;
 
   const routeByName = {
     '山陽道': 'sanyo', '中国道': 'chugoku', '米子道': 'yonago', '岡山道': 'okayama',
@@ -21,20 +24,8 @@
   const escapeHtml = value => String(value || '').replace(/[&<>"']/g, c => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
   })[c]);
-  const km = (a, b) => {
-    const rad = n => n * Math.PI / 180;
-    const dLat = rad(b[0] - a[0]), dLng = rad(b[1] - a[1]);
-    const h = Math.sin(dLat / 2) ** 2 + Math.cos(rad(a[0])) * Math.cos(rad(b[0])) * Math.sin(dLng / 2) ** 2;
-    return 12742 * Math.asin(Math.sqrt(h));
-  };
   function locateEvents(events) {
     KPMAPTrafficLocation.resolveEvents(events, D, window.KPMAP_TRAFFIC_LANDMARKS || { routes: {} }, routeByName);
-  }
-
-  function listPriority(event) {
-    if (['closed', 'accident', 'broken', 'falling'].includes(event.category)) return 0;
-    if (/工事|作業/.test(event.reason || '') || ['oneLane', 'laneRestriction', 'underRegulation'].includes(event.category)) return 2;
-    return 1;
   }
 
   function colorFor(category) {
@@ -49,7 +40,7 @@
   function popupHtml(event) {
     return '<strong>' + escapeHtml(event.road) + '</strong><br>' + escapeHtml(event.title) +
       '<br>' + [event.categoryLabel, directionLabel(event.direction), event.reason, event.detail].filter(Boolean).map(escapeHtml).join(' ・ ') +
-      (event.mapLocationNote ? '<br><small>' + escapeHtml(event.mapLocationNote) + '</small>' : '');
+      (event.mapLocationNote ? '<br><small>' + escapeHtml(event.mapLocationNote) + '</small>' : '') + ageHtml(event);
   }
   const isRestriction = event => ['oneLane', 'laneRestriction', 'underRegulation'].includes(event.category) ||
     (event.category !== 'closed' && /工事|作業/.test(event.reason || ''));
@@ -73,49 +64,35 @@
       map.on('zoomend', renderMap);
       zoomHooked = true;
     }
-    const groups = [];
+    const scale = map.getZoom() < 13 ? .75 : map.getZoom() < 15 ? .875 : 1;
+    const size = Math.round(32 * scale);
     for (const event of trafficData) {
+      event.mapMarker = null;
       if (!event.mapPoint) continue;
-      const pixel = map.latLngToLayerPoint(event.mapPoint);
-      let group = null, distance = 46;
-      for (const candidate of groups) {
-        const center = map.latLngToLayerPoint(candidate.center);
-        const d = pixel.distanceTo(center);
-        if (d < distance) { group = candidate; distance = d; }
+      const rank = mapRank(event), pane = 'trafficPriority' + rank;
+      if (!map.getPane(pane)) {
+        map.createPane(pane);
+        map.getPane(pane).style.zIndex = String(660 - rank);
       }
-      if (!group) {
-        group = { events: [], lat: 0, lng: 0, center: event.mapPoint };
-        groups.push(group);
-      }
-      group.events.push(event);
-      group.lat += event.mapPoint[0];
-      group.lng += event.mapPoint[1];
-      group.center = [group.lat / group.events.length, group.lng / group.events.length];
-    }
-    for (const group of groups) {
-      const priority = { closed: 0, accident: 1, broken: 2, falling: 3 };
-      const events = group.events.slice().sort((a, b) => (priority[a.category] ?? 10) - (priority[b.category] ?? 10));
-      const sign = signFor(events[0]);
-      const baseSize = events.length > 1 ? 36 : 32;
-      const scale = map.getZoom() < 13 ? .75 : map.getZoom() < 15 ? .875 : 1;
-      const size = Math.round(baseSize * scale);
-      const label = events.length > 1 ? '<span class="traffic-cluster-symbol">' + sign.html + '</span><b class="traffic-cluster-count">' + events.length + '</b>' : sign.html;
+      const sign = signFor(event);
       const icon = L.divIcon({
-        className: '', iconSize: [size, size], iconAnchor: [size / 2, size / 2],
-        html: '<span class="traffic-pin' + (sign.warning ? ' warning' : '') + (events.length > 1 ? ' multi' : '') +
-          '" style="transform:scale(' + (size / baseSize) + ');transform-origin:top left" role="img" aria-label="' + escapeHtml(events.length > 1 ? '交通情報 ' + events.length + '件' : events[0].categoryLabel) + '">' + label + '</span>'
+        className: 'traffic-event-marker', iconSize: [size, size], iconAnchor: [size / 2, size / 2],
+        html: '<span class="traffic-pin' + (sign.warning ? ' warning' : '') +
+          '" style="transform:scale(' + scale + ');transform-origin:top left" role="img" aria-label="' +
+          escapeHtml(event.categoryLabel) + '">' + sign.html + '</span>'
       });
-      const marker = L.marker(group.center, { pane: 'trafficPane', icon, zIndexOffset: 5000 });
-      marker.bindPopup(events.map(popupHtml).join('<hr>'));
+      const marker = L.marker(event.mapPoint, { pane, icon, zIndexOffset: 5000, keyboard: true,
+        title: event.road + ' ' + event.categoryLabel + ' ' + event.title });
+      marker.bindPopup(popupHtml(event));
       marker.addTo(trafficLayer);
-      for (const event of events) event.mapMarker = marker;
+      event.mapMarker = marker;
     }
     const placed = trafficData.filter(e => e.mapPoint).length;
     meta.textContent = '地図 ' + placed + '件 ・ 一覧は現在地周辺' + (placed < trafficData.length ? ' ・ 位置未確認 ' + (trafficData.length - placed) + '件' : '');
   }
 
   function unresolvedHtml() {
-    const unknown = trafficData.filter(e => !e.mapPoint).sort((a, b) => listPriority(a) - listPriority(b));
+    const unknown = trafficData.filter(e => !e.mapPoint).sort((a, b) => mapRank(a) - mapRank(b));
     if (!unknown.length) return '';
     return '<details class="traffic-unresolved"><summary>位置未確認 ' + unknown.length + '件（周辺かどうかは不明）</summary>' +
       unknown.map(event => '<article class="traffic-card"><div class="traffic-loc">' + escapeHtml(event.road) + '　' +
@@ -131,25 +108,44 @@
       return;
     }
     const radius = Number(radiusSelect.value) || 20;
-    const nearby = trafficData.filter(e => e.mapPoint && km(userLocation, e.mapPoint) <= radius)
-      .sort((a, b) => listPriority(a) - listPriority(b) || km(userLocation, a.mapPoint) - km(userLocation, b.mapPoint));
-    count.textContent = nearby.length + '件（' + radius + 'km以内）';
-    list.innerHTML = nearby.length ? nearby.map((event, index) =>
-      '<article class="traffic-card" data-index="' + index + '" style="border-left-color:' + colorFor(event.category) + '">' +
-      '<div class="traffic-loc">' + escapeHtml(event.road) + '　' + escapeHtml(event.title) + '</div>' +
-      '<div class="traffic-tags">' +
+    const groups = nearbyGroups(trafficData, userLocation, radius);
+    count.textContent = groups.count + '件（' + radius + 'km以内）';
+    const card = ({ event, distance }, index) =>
+      '<button type="button" class="traffic-card" data-event="' + index + '" style="border-left-color:' + colorFor(event.category) + '">' +
+      '<span class="traffic-loc">' + escapeHtml(event.road) + '　' + escapeHtml(event.title) + '</span>' +
+      '<span class="traffic-tags">' +
       [event.categoryLabel, directionLabel(event.direction), event.reason, event.detail].filter(Boolean)
         .map(tag => '<span class="traffic-tag">' + escapeHtml(tag) + '</span>').join('') +
-      '</div></article>'
-    ).join('') : '<div class="traffic-empty">現在地から' + radius + 'km以内に交通情報はありません。</div>';
+      '<span class="traffic-distance">約' + distance.toFixed(1) + 'km</span></span>' + ageHtml(event) + '</button>';
+    const ordered = [...groups.priority, ...groups.regulation];
+    let index = 0;
+    const groupHtml = (title, entries, css) => entries.length ?
+      '<section class="traffic-group ' + css + '"><h3>' + title + '<small>' + entries.length + '件・近い順</small></h3><div class="traffic-group-cards">' +
+      entries.map(item => card(item, index++)).join('') + '</div></section>' : '';
+    list.innerHTML = groups.count ?
+      groupHtml('通行止め・事故・故障車・落下物・その他', groups.priority, 'traffic-priority-group') +
+      groupHtml('工事・交通規制', groups.regulation, 'traffic-regulation-group') :
+      '<div class="traffic-empty">現在地から' + radius + 'km以内に交通情報はありません。</div>';
     list.innerHTML += unresolvedHtml();
-    list.querySelectorAll('.traffic-card[data-index]').forEach((card, index) => card.addEventListener('click', () => {
-      const event = nearby[index];
-      if (event.mapPoint) {
-        map.setView(event.mapPoint, Math.max(map.getZoom(), 14));
-        if (event.mapMarker) event.mapMarker.openPopup();
-      }
+    list.querySelectorAll('[data-event]').forEach(cardEl => cardEl.addEventListener('click', () => {
+      const event = ordered[Number(cardEl.dataset.event)].event;
+      window.dispatchEvent(new CustomEvent('kpmap-browse-map'));
+      map.setView(event.mapPoint, Math.max(map.getZoom(), 14));
+      if (event.mapMarker) event.mapMarker.openPopup();
     }));
+  }
+
+  function ageHtml(event) {
+    const text = eventAge(event.occurredAt);
+    return text ? '<small class="traffic-age" data-occurred-at="' + escapeHtml(event.occurredAt) + '">' + text + '</small>' : '';
+  }
+  function showUpdateTime(timestamp) {
+    const time = Date.parse(timestamp);
+    if (!Number.isFinite(time)) { updated.textContent = '更新時刻を確認できません'; return; }
+    const clock = new Intl.DateTimeFormat('ja-JP', { timeZone: 'Asia/Tokyo', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date(time));
+    updated.textContent = clock + ' 更新（取得時刻）';
+    updated.dateTime = new Date(time).toISOString();
+    updated.title = new Intl.DateTimeFormat('ja-JP', { timeZone: 'Asia/Tokyo', dateStyle: 'medium', timeStyle: 'short' }).format(new Date(time));
   }
 
   async function load() {
@@ -162,12 +158,16 @@
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || '取得エラー');
       trafficData = Array.isArray(data.events) ? data.events : [];
+      lastSuccessfulFetch = Date.now();
+      showUpdateTime(data.fetchedAt);
+      updated.classList.remove('is-stale');
       locateEvents(trafficData);
       renderMap();
       renderList();
     } catch (error) {
       console.error('KPMAP traffic', error);
-      meta.textContent = '交通情報を取得できませんでした。再試行してください。';
+      meta.textContent = '更新に失敗しました。前回取得した情報を表示しています。';
+      if (updated) updated.classList.add('is-stale');
     } finally {
       busy = false;
       refresh.disabled = false;
@@ -182,7 +182,14 @@
   radiusSelect.addEventListener('change', renderList);
   refresh.addEventListener('click', load);
   load();
-  setInterval(load, 300000);
+  setInterval(() => { if (!document.hidden) load(); }, 300000);
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden && Date.now() - lastSuccessfulFetch >= 30000) load();
+  });
+  window.addEventListener('online', load);
+  setInterval(() => document.querySelectorAll('.traffic-age[data-occurred-at]').forEach(el => {
+    el.textContent = eventAge(el.dataset.occurredAt);
+  }), 60000);
 })();
 
 

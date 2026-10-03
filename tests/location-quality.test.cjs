@@ -1,0 +1,15 @@
+const assert = require('node:assert/strict');
+const { chooseFix }=require('../location-quality.js');
+const now=Date.parse('2026-10-03T01:00:10Z');
+const previous={point:[34.45,132.72],time:now-1000,accuracy:10};
+const fix=(lat=34.45,lon=132.72,accuracy=10,speed=1,time=now)=>({timestamp:time,coords:{latitude:lat,longitude:lon,accuracy,speed,heading:90}});
+assert.equal(chooseFix(fix(35.45),previous,now),null,'Impossible jumps must be rejected');
+assert.equal(chooseFix(fix(34.45,132.72,500),previous,now),null,'Suddenly degraded fixes must be rejected');
+assert.equal(chooseFix(fix(34.45,132.72,10,1,now-40000),null,now),null,'Stale coordinates must be rejected');
+assert.equal(chooseFix(fix(34.45,132.72,10,1,previous.time),previous,now),null,'Out-of-order coordinates must be rejected');
+assert.deepEqual(chooseFix(fix(34.450001),previous,now).coords.latitude,34.45,'Only tiny stationary jitter is damped');
+assert.equal(chooseFix(fix(34.450001,132.72,10,10),previous,now).coords.latitude,34.450001,'Moving vehicles must retain actual coordinates');
+const prototype=fix(34.450001).coords;
+const coords=Object.create(Object.fromEntries(Object.entries(prototype).map(([k,v])=>[k,v])));
+assert.equal(chooseFix({timestamp:now,coords},previous,now).coords.accuracy,10,'Native coordinate getters must survive filtering');
+console.log('PASS: fresh GPS, impossible jumps, poor accuracy, stationary jitter and native coordinate fields');
