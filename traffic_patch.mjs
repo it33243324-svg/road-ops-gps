@@ -103,3 +103,6 @@ fs.writeFileSync(file, html);
 html = fs.readFileSync(file, 'utf8').replace('</style>','.traffic-cluster-count{position:absolute;top:-9px;right:-9px;min-width:18px;height:18px;box-sizing:border-box;padding:0 3px;border:2px solid #fff;border-radius:10px;background:#c82b3d;color:#fff;font:bold 11px/14px system-ui;text-align:center;box-shadow:0 1px 4px #17354b55;pointer-events:none}.traffic-shared-event{padding:9px 0;border-bottom:1px solid #dbe3e9}.traffic-shared-event:last-child{border:0}'+'</style>');
 fs.writeFileSync(file,html);
 fs.copyFileSync('f-key-preview.html', 'dist/f-key-preview.html');
+
+fs.mkdirSync('dist/assets',{recursive:true});
+fs.copyFileSync('assets/genba-cat.gif','dist/assets/genba-cat.gif');
