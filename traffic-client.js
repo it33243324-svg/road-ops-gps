@@ -13,14 +13,7 @@
   const updated = document.getElementById('trafficUpdated');
   const { distanceKm: km, isRegulation, mapRank, nearbyGroups, eventAge } = KPMAPTrafficPresentation;
 
-  const routeByName = {
-    '山陽道': 'sanyo', '中国道': 'chugoku', '米子道': 'yonago', '岡山道': 'okayama',
-    '浜田道': 'hamada', '松江道': 'matsue', '広島道': 'hiroshima', '山陰道': 'sanin',
-    '関門橋': 'kanmon_bridge', '瀬戸中央道': 'seto', '西瀬戸道': 'shimanami',
-    '広島岩国道路': 'hiroshima_iwakuni', '広島呉道路': 'hiroshima_kure',
-    '関門トンネル': 'kanmon_tunnel', '鳥取道': 'tottori', '尾道道': 'onomichi',
-    '松永道路': 'matsunaga', '東広島呉道': 'higashihiroshima_kure', '小郡道路': 'ogori'
-  };
+  const routeByName = { '山陽道': 'sanyo', '中国道': 'chugoku', '広島道': 'hiroshima', '広島岩国道路': 'hiroshima_iwakuni' };
   const escapeHtml = value => String(value || '').replace(/[&<>"']/g, c => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
   })[c]);
@@ -166,7 +159,7 @@
       const response = await fetch('/api/traffic?ts=' + Date.now(), { cache: 'no-store' });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || '取得エラー');
-      trafficData = Array.isArray(data.events) ? data.events : [];
+      trafficData = (Array.isArray(data.events) ? data.events : []).filter(event => ['山陽道','中国道','広島道','広島岩国道路'].includes(String(event.road || '').trim()));
       lastSuccessfulFetch = Date.now();
       showUpdateTime(data.fetchedAt);
       updated.classList.remove('is-stale');

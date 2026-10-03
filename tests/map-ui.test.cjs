@@ -35,7 +35,7 @@ async function main(){
  assert.equal(doc.querySelector('#q').value,'');
  assert.equal(doc.querySelector('#gmap').disabled,true);
  assert.equal(doc.querySelector('#trafficRadius').value,'20');
- assert.equal(doc.querySelectorAll('.traffic-event-marker').length,42,'Every real event needs its own marker');
+ assert.equal(doc.querySelectorAll('.traffic-event-marker').length,32,'Every real event needs its own marker');
  assert.equal(doc.querySelectorAll('.traffic-cluster-count').length,0,'Clusters must be removed');
  assert.equal(doc.querySelectorAll('.facility').length,135,'Existing four-route facility labels must remain');
  assert(doc.querySelector('#trafficUpdated').textContent.includes('更新（取得時刻）'));
@@ -121,7 +121,7 @@ async function main(){
  assert.equal(doc.querySelector('#locationDirection').textContent,'取得できません');
  const oldTime=doc.querySelector('#trafficUpdated').dateTime;
  failFetch=true;doc.querySelector('#trafficRefresh').click();await wait(30);
- assert.equal(doc.querySelectorAll('.traffic-event-marker').length,42,'Failed update preserves all old traffic markers');
+ assert.equal(doc.querySelectorAll('.traffic-event-marker').length,32,'Failed update preserves all old four-route traffic markers');
  assert.equal(doc.querySelector('#trafficUpdated').dateTime,oldTime,'Failed update must not claim a fresh timestamp');
  assert(doc.querySelector('#trafficUpdated').classList.contains('is-stale'));
  failFetch=false;

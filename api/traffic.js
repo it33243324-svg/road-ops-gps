@@ -1,5 +1,6 @@
 const SOURCE_URL = 'https://ihighway.jp/datas/json/traffic.json';
 const AREA_KEY = 'area07';
+const DISPLAY_ROADS = new Set(['山陽道','中国道','広島道','広島岩国道路']);
 
 const CATEGORY_LABELS = {
   closed: '通行止', oneLane: '片側交互通行', laneRestriction: '車線規制',
@@ -16,7 +17,7 @@ function collectGroups(bucket, output) {
       for (const event of Array.isArray(road?.info) ? road.info : []) {
         if (!event || typeof event !== 'object') continue;
         const title = String(event.title || '').trim();
-        if (!title) continue;
+        if (!title || !DISPLAY_ROADS.has(String(road.roadName || '').trim())) continue;
         const coordinates = Array.isArray(event.coordinate) ? event.coordinate : event.coordinate ? [event.coordinate] : [];
         const points = coordinates.map(c => ({
           x: ((Number(c.startX) || 0) + (Number(c.endX) || Number(c.startX) || 0)) / 2,

@@ -21,7 +21,7 @@ if(!s.includes(dataAnchor)) throw new Error('DATA filter anchor not found');s=s.
 const oldKeys="keys=[...new Set(['sanyo','chugoku',r.value])]";if(!s.includes(oldKeys)) throw new Error('KP label selection block not found');s=s.replace(oldKeys,"keys=['sanyo','chugoku','hiroshima','hiroshima_iwakuni']");
 const routeFilter="['sanyo','chugoku','hiroshima','hiroshima_iwakuni'].includes(k)";
 const roadDraw="for(const v of Object.values(D))for(const s of v.segs){L.polyline(s,{color:'#061219',weight:9,opacity:.88,interactive:false}).addTo(roads);L.polyline(s,{color:v.color,weight:5,opacity:.98,interactive:false}).addTo(roads)}";
-const roadDrawNew="for(const [k,v] of Object.entries(D))for(const s of v.segs){const active=['sanyo','chugoku','hiroshima','hiroshima_iwakuni'].includes(k);L.polyline(s,{color:'#061219',weight:active?9:5,opacity:active?.88:.36,interactive:false}).addTo(roads);L.polyline(s,{color:active?v.color:'#536670',weight:active?5:2,opacity:active?.98:.55,interactive:false}).addTo(roads)}";
+const roadDrawNew="for(const [k,v] of Object.entries(D))if(['sanyo','chugoku','hiroshima','hiroshima_iwakuni'].includes(k))for(const s of v.segs){L.polyline(s,{color:'#061219',weight:9,opacity:.88,interactive:false}).addTo(roads);L.polyline(s,{color:v.color,weight:5,opacity:.98,interactive:false}).addTo(roads)}";
 if(!s.includes(roadDraw)) throw new Error('road draw block not found');s=s.replace(roadDraw,roadDrawNew);
 
 const selectAnchor="Object.entries(D).forEach(([k,v])=>r.add";
@@ -58,3 +58,4 @@ s=s.replace('<b>KPMAP // CHUGOKU</b>','');
 fs.writeFileSync(p,s);
 console.log('Set KPMAP branding and Japanese color basemap');
 console.log('Kept all existing lat/lng geometry and map projection');
+
