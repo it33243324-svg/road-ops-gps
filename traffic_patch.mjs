@@ -34,8 +34,10 @@ const locationPanel = '<section class="location-panel" id="locationPanel" aria-l
 if (!html.includes('id="locationPanel"')) html = html.replace(mapAnchor, mapAnchor + locationPanel + panel);
 const scriptAnchor = '</body>';
 if (!html.includes(scriptAnchor)) throw new Error('traffic script insertion point not found');
-html = html.replace(scriptAnchor, '<script src="/traffic-client.js"></script><script src="/location-client.js"></script><script src="/location-ui.js"></script>' + scriptAnchor);
+html = html.replace(scriptAnchor, '<script src="/traffic-landmarks.js"></script><script src="/traffic-location.js"></script><script src="/traffic-client.js"></script><script src="/location-client.js"></script><script src="/location-ui.js"></script>' + scriptAnchor);
 fs.copyFileSync('traffic-client.js', 'dist/traffic-client.js');
+fs.copyFileSync('traffic-location.js', 'dist/traffic-location.js');
+fs.writeFileSync('dist/traffic-landmarks.js', 'window.KPMAP_TRAFFIC_LANDMARKS=' + fs.readFileSync('traffic-landmarks.json', 'utf8') + ';');
 fs.copyFileSync('location-client.js', 'dist/location-client.js');
 fs.copyFileSync('location-ui.js', 'dist/location-ui.js');
 // Reuse KP markers and preload overlays outside the viewport.
@@ -77,4 +79,5 @@ html = html.replace('</body>', "<script>r.value='sanyo';q.value='';q.autocomplet
 html = html.replace('placeholder="KP 123.4"', 'placeholder="KPを入力してください"');
 fs.writeFileSync(file, html);
 console.log('Added JARTIC/iHighway traffic list below the map with 5-minute refresh');
+
 
