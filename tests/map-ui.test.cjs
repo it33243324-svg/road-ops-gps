@@ -143,9 +143,10 @@ async function main(){
  const auto=intervals.find(x=>x.ms===60000);assert(auto);await auto.fn();await wait(30);
  assert(!doc.querySelector('#trafficUpdated').classList.contains('is-stale'));
  assert(fetches>=3,'Initial, manual and automatic requests must run');
+ map.setView([34.7,132.5],12,{animate:false});const recenterZoom=map.getZoom();
  const beforeRestart=watchStarts;now+=31000;
  doc.querySelector('.map-recenter').click();assert(watchStarts>beforeRestart,'Stale watch must restart on recenter');assert(watchClears>0);
- gps(34.4557,132.7252,0,0);assert(Math.abs(map.getCenter().lat-34.4557)<.0001,'Reacquired fix must recenter');
+ gps(34.4557,132.7252,0,0);assert(Math.abs(map.getCenter().lat-34.4557)>.01,'Recenter starts a slide instead of an instant jump');assert.equal(map.getZoom(),recenterZoom,'Recenter preserves scale');await until(()=>Math.abs(map.getCenter().lat-34.4557)<.0001,'Animated recenter reaches reacquired fix');
  gpsError({code:3});const beforeTimeoutRetry=watchStarts;doc.querySelector('.map-recenter').click();assert(watchStarts>beforeTimeoutRetry,'Timeout must permit retry');
  assert.deepEqual(errors,[]);
  console.log('PASS: complete real-data page, individual markers, existing KP/Google/facility controls, GPS walk/vehicle rules, heading projection, follow/pan, fullscreen fallback and refresh failure recovery');

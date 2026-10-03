@@ -101,7 +101,7 @@
     if (!accuracyCircle) accuracyCircle = L.circle(point, { radius: accuracy, color: '#ff304f', weight: 1, fillColor: '#ff304f', fillOpacity: .06, interactive: false }).addTo(here);
     else accuracyCircle.setLatLng(point).setRadius(accuracy);
 
-    if (requestedRecenter) map.stop().setView(point, map.getZoom(), { animate: false });
+    if (requestedRecenter) map.stop().panTo(point, { animate: true, duration: .9, easeLinearity: .25 });
     else if (firstFix) setDefaultView(point);
     requestedRecenter = false;
     firstFix = false;
@@ -137,7 +137,7 @@
     }
     requestedRecenter = recenter;
     if (latest && recenter && Date.now() - latest.timestamp <= 30000) {
-      map.stop().setView(latest.point, map.getZoom(), { animate: false });
+      map.stop().panTo(latest.point, { animate: true, duration: .9, easeLinearity: .25 });
       requestedRecenter = false;
     }
     // A watch can remain registered even after GPS stops delivering fixes.
