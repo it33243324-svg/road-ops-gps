@@ -108,11 +108,17 @@ async function main(){
  assert(east.y<center.y&&Math.abs(east.x-center.x)<4,'East should render at the top');
  const kp=doc.querySelector('.kplabel');kp.click();
  assert(w.eval('pickedKp')&&doc.querySelector('#gmap').disabled===false,'KP click and Google Map action must survive rotation');
+ assert.equal(doc.querySelector('.kplabel.picked').closest('.leaflet-pane'),map.getPane('selectedKpPane'),'Selected KP must move above other overlays');
+ assert.equal(map.getPane('selectedKpPane').parentElement,host);
+ assert(+map.getPane('selectedKpPane').style.zIndex>+map.getPane('trafficPopupPane').style.zIndex);
+ assert.equal(w.getComputedStyle(doc.querySelector('.kpstem')).display,'none');
  const input=doc.querySelector('#q');input.value='292';input.dispatchEvent(new w.Event('input',{bubbles:true}));
  assert.equal(doc.querySelector('#go').disabled,false);
  doc.querySelector('#go').click();
  assert.equal(w.eval('pickedKp')[2],292);
  assert.equal(map.getZoom(),12,'Existing KP jump zoom must remain unchanged');
+ assert.equal(doc.querySelectorAll('.leaflet-selectedKp-pane .kplabel.picked').length,1,'KP input must update the single foreground selection');
+ assert.equal(doc.querySelectorAll('.leaflet-selectedKp-pane .kplabel:not(.picked)').length,0,'Old selection must return to its ordinary pane');
  assert.equal(tools[1].getAttribute('aria-pressed'),'false','KP jump must stop following');
  tools[2].click();assert.equal(map.getBearing(),0,'North-up switch must work');
  tools[0].click();await wait(80);
