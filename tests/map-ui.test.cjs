@@ -50,6 +50,8 @@ async function main(){
  assert.equal(doc.querySelector('#locationKp').nextElementSibling,null);\n assert.equal(doc.querySelector('.location-road-stack small').textContent,'最寄りKP');
  assert.equal(w.getComputedStyle(doc.querySelector('.location-road-stack')).display,'flex');
  assert.equal(w.getComputedStyle(doc.querySelector('.location-road-stack')).flexDirection,'column');
+ assert.equal(w.getComputedStyle(doc.querySelector('.location-main')).alignItems,'flex-end');
+ assert.equal(w.getComputedStyle(doc.querySelector('.location-summary')).alignItems,'flex-end');
  assert.equal(doc.querySelector('#locationDirection').previousElementSibling.className,'location-main');
  assert(doc.querySelector('.next-facilities'),'Next facilities panel stays in the upper toolbar');
  assert.equal(doc.querySelector('.traffic-new'),null,'Initial events are not all new');
