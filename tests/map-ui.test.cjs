@@ -48,6 +48,8 @@ async function main(){
  assert.deepEqual(errors,[]);
  assert.equal(doc.querySelector('#locationPanel').parentElement,doc.querySelector('#m'),'Location summary stays inside the map for fullscreen');
  assert.equal(doc.querySelector('#locationKp').nextElementSibling,null);\n assert.equal(doc.querySelector('.location-road-stack small').textContent,'最寄りKP');
+ assert.equal(w.getComputedStyle(doc.querySelector('.location-road-stack')).display,'flex');
+ assert.equal(w.getComputedStyle(doc.querySelector('.location-road-stack')).flexDirection,'column');
  assert.equal(doc.querySelector('#locationDirection').previousElementSibling.className,'location-main');
  assert(doc.querySelector('.next-facilities'),'Next facilities panel stays in the upper toolbar');
  assert.equal(doc.querySelector('.traffic-new'),null,'Initial events are not all new');
