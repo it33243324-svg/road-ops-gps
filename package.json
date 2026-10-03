@@ -1,7 +1,7 @@
 {
   "scripts": {
     "build": "node prepatch.mjs && node facilities_patch.mjs && node build.mjs && node traffic_patch.mjs",
-    "test": "node tests/traffic-presentation.test.cjs && node tests/location-quality.test.cjs && node tests/traffic-location.test.cjs dist/index.html && node tests/map-ui.test.cjs"
+    "test": "node tests/traffic-new.test.cjs && node tests/next-facilities.test.cjs && node tests/traffic-presentation.test.cjs && node tests/location-quality.test.cjs && node tests/traffic-location.test.cjs dist/index.html && node tests/map-ui.test.cjs"
   },
   "devDependencies": {
     "jsdom": "26.1.0",

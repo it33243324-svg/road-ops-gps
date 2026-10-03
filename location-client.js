@@ -98,12 +98,14 @@
     const preferred = routes.find(item => item.key === selected && item.closest.distance <= closestDistance + 0.2);
     const match = preferred || routes[0];
     if (closestDistance > 5) {
+      window.dispatchEvent(new CustomEvent('kpmap-road-location',{detail:{roadDistance:closestDistance}}));
       roadEl.textContent = '対象の高速道路が近くにありません'; showDirection('取得できません'); kpEl.textContent = '—';
       statusEl.textContent = '範囲外'; noteEl.textContent = '対象路線から約' + (Math.round(closestDistance * 10) / 10) + 'km離れています。'; statusEl.classList.remove('ready'); return;
     }
     const roadPoint = match.closest.point || point;
     const nearest = nearestKp(match.route, roadPoint);
     const direction = detail.directionStatus === 'judging' ? { text: '判定中', note: '40km/h以上の走行を30秒間確認しています。' } : getTravelDirection(match.key, match.route, roadPoint, Number.isFinite(detail.heading) ? detail.heading : NaN, detail.headingSource);
+    window.dispatchEvent(new CustomEvent('kpmap-road-location', {detail:{routeKey:match.key,kp:nearest?.value,direction:direction.text,roadDistance:match.closest.distance}}));
     roadEl.textContent = match.route.name;
     showDirection(direction.text);
     kpEl.textContent = nearest ? Number(nearest.value).toFixed(1) + ' KP' : '—';

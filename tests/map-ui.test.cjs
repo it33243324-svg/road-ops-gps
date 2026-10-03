@@ -35,6 +35,14 @@ async function main(){
  assert.equal(doc.querySelector('#locationPanel').parentElement,doc.querySelector('#m'),'Location summary stays inside the map for fullscreen');
  assert.equal(doc.querySelector('#locationKp').nextElementSibling,null);
  assert.equal(doc.querySelector('#locationDirection').previousElementSibling.className,'location-main');
+ assert(doc.querySelector('.next-facilities'),'Next facilities panel stays in the upper toolbar');
+ assert.equal(doc.querySelector('.traffic-new'),null,'Initial events are not all new');
+ map.setZoom(15,{animate:false});await wait(60);
+ assert(doc.querySelector('.detail-label'),'Zoom reveals stored TN and bridge details');
+ assert.equal(map.getPane('detailLabelPane').parentElement,map.getPane('markerPane').parentElement);
+ assert(+map.getPane('detailLabelPane').style.zIndex<+map.getPane('kpPane').style.zIndex);
+ map.setZoom(12,{animate:false});await wait(60);
+ assert.equal(doc.querySelector('.detail-label'),null,'Wide view hides detail labels');
  assert.equal(doc.querySelector('#q').value,'');
  assert.equal(doc.querySelector('#gmap').disabled,true);
  assert.equal(doc.querySelector('#trafficRadius').value,'20');
@@ -70,6 +78,8 @@ async function main(){
  const tools=[...doc.querySelectorAll('.map-tool')];assert.equal(tools.length,3);
  assert(tools[0].title.includes('全画面')&&tools[1].title.includes('追いかけ')&&tools[2].title.includes('進行方向'));
  gps(34.4557,132.721,1,180);
+ assert.deepEqual(Object.values(map._layers).filter(x=>x.options?.pane==='distanceRingPane'&&x.getRadius).map(x=>x.getRadius()),[5000,10000],'Distance rings use exact meter radii');
+ assert.equal(map.getPane('distanceRingPane').parentElement,map.getPane('overlayPane').parentElement,'Range rings rotate with geographic overlays');
  assert(!/E2|E74/.test(doc.querySelector('#locationRoad').textContent),'Road overlay omits route codes');
  assert.equal(w.KPMAPLocation.getLatest().heading,null,'Walking must not determine direction');
  const nearbyText=doc.querySelector('#trafficCount').textContent;
@@ -94,6 +104,7 @@ async function main(){
  gps(34.4557,132.72515,12,90);
  assert.equal(w.KPMAPLocation.getLatest().heading,90);
  assert.equal(w.KPMAPLocation.getLatest().directionStatus,'ready');
+ assert(doc.querySelector('.next-facility-item'),'Confirmed driving direction produces upcoming facilities');
  gps(34.4557,132.72516,1,180);
  assert.equal(w.KPMAPLocation.getLatest().heading,90,'Walking retains confirmed vehicle heading');
  gps(34.4557,132.7253,12,270);
@@ -154,6 +165,9 @@ async function main(){
  doc.querySelector('.map-recenter').click();assert(watchStarts>beforeRestart,'Stale watch must restart on recenter');assert(watchClears>0);
  gps(34.4557,132.7252,0,0);assert(Math.abs(map.getCenter().lat-34.4557)>.01,'Recenter starts a slide instead of an instant jump');assert.equal(map.getZoom(),recenterZoom,'Recenter preserves scale');await until(()=>Math.abs(map.getCenter().lat-34.4557)<.0001,'Animated recenter reaches reacquired fix');
  gpsError({code:3});const beforeTimeoutRetry=watchStarts;doc.querySelector('.map-recenter').click();assert(watchStarts>beforeTimeoutRetry,'Timeout must permit retry');
+ const extra={...fixture.events.find(e=>e.road==='山陽道'),reason:'test-only changed event'};fixture.events.push(extra);await auto.fn();await wait(30);
+ assert(doc.querySelector('.traffic-map-new'),'New traffic is visibly flagged on the map');
+ now+=10*60000;await auto.fn();await wait(30);assert.equal(doc.querySelector('.traffic-map-new'),null,'Badge expires at ten minutes without feed resets');
  assert.deepEqual(errors,[]);
  console.log('PASS: complete real-data page, individual markers, existing KP/Google/facility controls, GPS walk/vehicle rules, heading projection, follow/pan, fullscreen fallback and refresh failure recovery');
  dom.window.close();

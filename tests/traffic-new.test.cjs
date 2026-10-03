@@ -1,0 +1,10 @@
+const assert=require('node:assert/strict');
+const {create,duration}=require('../traffic-new.js');
+const a={road:'山陽道',category:'accident',title:'五日市TN',direction:'上り',reason:'事故',detail:''},b={...a,title:'広島IC'};
+let t=create();t.update([a],1000);assert(!t.isNew(a,1000),'Initial feed is the baseline');
+t.update([a,b],61000);assert(t.isNew(b,61000));assert(!t.isNew(a,61000));
+t.update([a,b],121000);assert(t.isNew(b,61000+duration-1));assert(!t.isNew(b,61000+duration));
+t=create(t.snapshot());assert(t.isNew(b,121000),'Reload preserves the original deadline');
+t.update([a],181000);t.update([a,b],241000);assert(!t.isNew(b,61000+duration),'Reappearing identical record cannot extend the badge');
+const changed={...b,detail:'車線規制'};t.update([a,b,changed],700000);assert(t.isNew(changed,700000),'Changed information has its own ten-minute indication');
+console.log('PASS: initial baseline, new/change detection, exact ten-minute expiry, reload and repeated-feed stability');

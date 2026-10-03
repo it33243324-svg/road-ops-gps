@@ -10,6 +10,9 @@
   let trafficLayer = null;
   let zoomHooked = false;
   let lastSuccessfulFetch = 0;
+  let savedNew=null;try{savedNew=JSON.parse(sessionStorage.getItem('kpmap-traffic-new')||'null');}catch{}
+  const newTracker=KPMAPTrafficNew.create(savedNew);
+  const newHtml=event=>newTracker.isNew(event)?'<span class="traffic-new">NEW</span>':'';
   const updated = document.getElementById('trafficUpdated');
   const { distanceKm: km, isRegulation, mapRank, nearbyGroups, eventAge } = KPMAPTrafficPresentation;
 
@@ -31,7 +34,7 @@
   const directionLabel = value => String(value || '').split(/[：:]/)[0].trim();
 
   function popupHtml(event) {
-    return '<strong>' + escapeHtml(event.road) + '</strong><br>' + escapeHtml(event.title) +
+    return newHtml(event)+'<strong>' + escapeHtml(event.road) + '</strong><br>' + escapeHtml(event.title) +
       '<br>' + [event.categoryLabel, directionLabel(event.direction), event.reason, event.detail].filter(Boolean).map(escapeHtml).join(' ・ ') +
       (event.mapLocationNote ? '<br><small>' + escapeHtml(event.mapLocationNote) + '</small>' : '') + ageHtml(event);
   }
@@ -91,7 +94,7 @@
         className: 'traffic-event-marker', iconSize: [size, size], iconAnchor: [size / 2, size / 2],
         html: '<span class="traffic-pin' + (sign.warning ? ' warning' : '') +
           '" style="transform:scale(' + scale + ');transform-origin:top left" role="img" aria-label="' +
-          escapeHtml(event.categoryLabel + (events.length > 1 ? '・交通情報' + events.length + '件' : '')) + '">' + sign.html + '</span>' + (events.length > 1 ? '<span class="traffic-cluster-count">' + events.length + '</span>' : '')
+          escapeHtml(event.categoryLabel + (events.length > 1 ? '・交通情報' + events.length + '件' : '')) + '">' + sign.html + '</span>' + (events.length > 1 ? '<span class="traffic-cluster-count">' + events.length + '</span>' : '') + (events.some(e=>newTracker.isNew(e))?'<span class="traffic-map-new">NEW</span>':'')
       });
       const marker = L.marker(event.mapPoint, { pane, icon, zIndexOffset: 5000, keyboard: true,
         title: event.road + ' ' + event.categoryLabel + ' ' + event.title + (events.length > 1 ? '（交通情報' + events.length + '件）' : '') });
@@ -124,7 +127,7 @@
     count.textContent = groups.count + '件（' + radius + 'km以内）';
     const card = ({ event, distance }, index) =>
       '<button type="button" class="traffic-card" data-event="' + index + '" style="border-left-color:' + colorFor(event.category) + '">' +
-      '<span class="traffic-loc">' + escapeHtml(event.road) + '　' + escapeHtml(event.title) + '</span>' +
+      '<span class="traffic-loc">' + newHtml(event) + escapeHtml(event.road) + '　' + escapeHtml(event.title) + '</span>' +
       '<span class="traffic-tags">' +
       [event.categoryLabel, directionLabel(event.direction), event.reason, event.detail].filter(Boolean)
         .map(tag => '<span class="traffic-tag">' + escapeHtml(tag) + '</span>').join('') +
@@ -170,6 +173,7 @@
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || '取得エラー');
       trafficData = (Array.isArray(data.events) ? data.events : []).filter(event => ['山陽道','中国道','広島道','広島岩国道路'].includes(String(event.road || '').trim()));
+      newTracker.update(trafficData);try{sessionStorage.setItem('kpmap-traffic-new',JSON.stringify(newTracker.snapshot()));}catch{}
       lastSuccessfulFetch = Date.now();
       showUpdateTime(data.fetchedAt);
       updated.classList.remove('is-stale');
@@ -199,6 +203,7 @@
     if (!document.hidden && Date.now() - lastSuccessfulFetch >= 30000) load();
   });
   window.addEventListener('online', load);
+  setInterval(()=>{if(!document.hidden&&trafficData.length){renderMap();renderList();}},60000);
   setInterval(() => document.querySelectorAll('.traffic-age[data-occurred-at]').forEach(el => {
     el.textContent = eventAge(el.dataset.occurredAt);
   }), 60000);

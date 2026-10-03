@@ -1,0 +1,9 @@
+const assert=require('node:assert/strict');
+const {next,projectKp}=require('../next-facilities.js');
+const route={marks:Array.from({length:101},(_,i)=>[i/10,34,132+i/1000]),facilities:[{name:'東IC',type:'IC',lat:34,lng:132.08},{name:'西IC',type:'IC',lat:34,lng:132.02},{name:'東PA',type:'PA',lat:34,lng:132.06},{name:'西SA',type:'SA',lat:34,lng:132.03},{name:'別道路IC',type:'IC',lat:35,lng:132.05}]};
+assert(Math.abs(projectKp(route.marks,[34,132.055]).kp-5.5)<1e-8);
+assert.deepEqual(next(route,5,'下り').map(x=>x.facility.name),['東IC','東PA']);
+assert.deepEqual(next(route,5,'上り').map(x=>x.facility.name),['西IC','西SA']);
+assert.deepEqual(next(route,5,'判定中'),[]);assert.deepEqual(next(route,5,'取得できません'),[]);
+assert(next(route,5,'下り').every(x=>x.distance>0));
+console.log('PASS: projected KP distance, both directions, next IC/service selection and no guess before direction confirmation');
