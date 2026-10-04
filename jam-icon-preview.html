@@ -1,0 +1,38 @@
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>KPMAP 渋滞アイコン10案</title><style>
+*{box-sizing:border-box}body{margin:0;background:#f4f7fb;color:#1d3549;font:16px/1.6 system-ui,sans-serif}main{max-width:1150px;margin:auto;padding:24px 18px 64px}h1{font-size:clamp(22px,5vw,30px);margin:0 0 8px}p{margin:0 0 16px;color:#526a7d}.controls{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-bottom:20px}button{font:inherit;background:white;color:#29485d;border:1px solid #c6d4df;padding:8px 12px;border-radius:8px;cursor:pointer}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px}.card{background:white;border:2px solid #dce5ee;border-radius:14px;padding:16px;cursor:pointer;text-align:left;color:inherit;min-width:0}.card.selected{border-color:#ef7826;box-shadow:0 0 0 3px #ef782620}.card h2{font-size:17px;margin:0 0 12px}.samples{display:flex;align-items:center;justify-content:space-around;gap:16px;min-height:110px}.sample{display:flex;flex-direction:column;align-items:center;gap:16px}.sample small{font-size:12px;color:#62798b}.enlarged{transform:scale(2);transform-origin:center}.legend{font-size:14px}.status{margin-top:20px;background:#fff4e9;border:1px solid #f6c79e;border-radius:10px;padding:14px;color:#82441e}.map-sample{height:150px;margin:14px 0 0;background:#d8e9c6;position:relative;border-radius:12px;overflow:hidden}.map-road{position:absolute;width:120%;height:12px;background:#2385ff;border:3px solid white;left:-10%;top:69px;transform:rotate(-12deg)}.map-sample .traffic-pin{position:absolute;left:calc(50% - 16px);top:58px}.frozen .traffic-pin.jam,.frozen .jam:before{animation:none!important}.frozen .jam:before{display:none}a{color:#1769b1}button:focus-visible{outline:3px solid #1769b1;outline-offset:3px}@media(max-width:550px){main{padding:18px 12px 40px}.grid{grid-template-columns:1fr 1fr;gap:10px}.card{padding:12px 8px}.card h2{font-size:14px}.samples{min-height:105px;gap:10px}.sample small{font-size:11px}.map-sample{height:110px}.map-road{top:51px}.map-sample .traffic-pin{top:39px}}.traffic-pin{width:32px;height:32px;box-sizing:border-box;position:relative;display:flex;align-items:center;justify-content:center;background:#fff000;border:2px solid #283000;border-radius:6px;box-shadow:0 0 0 2px #fff000;color:#101910;font-size:25px;font-weight:950;line-height:1;filter:drop-shadow(0 2px 3px #00101877)}.traffic-pin svg{width:25px;height:25px}.traffic-pin.closure{width:36px;height:36px;font-size:28px;border:3px solid #e53935;background:#fff000;color:#e53935;isolation:isolate}
+.closure::before,.closure::after{content:"";position:absolute;pointer-events:none;border-radius:inherit;box-sizing:border-box;z-index:-1}
+.effect-outline{animation:closure-outline 1.8s ease-in-out infinite}
+@keyframes closure-outline{0%,100%{box-shadow:0 0 0 2px #fff000,0 0 0 4px #e5393520}50%{border-color:#a81820;box-shadow:0 0 0 2px #fff000,0 0 0 6px #e5393560}}
+.effect-color{animation:closure-color 2.4s ease-in-out infinite}
+@keyframes closure-color{0%,100%{background:#fff000;color:#e53935}50%{background:#e53935;color:#fff;border-color:#fff}}
+.effect-wave:before,.effect-dual:before,.effect-dual:after{inset:-3px;border:2px solid #e53935;animation:closure-wave 2.4s ease-out infinite}
+.effect-dual:after{animation-delay:-1.2s}
+@keyframes closure-wave{0%{transform:scale(1);opacity:.7}100%{transform:scale(1.65);opacity:0}}
+.effect-corners:before{inset:-7px;border:2px dashed #e53935;animation:closure-corners 2.4s ease-in-out infinite}
+@keyframes closure-corners{0%,100%{opacity:.25;transform:scale(1)}50%{opacity:.9;transform:scale(1.1)}}
+.effect-breathe .closure-symbol{animation:closure-breathe 2.4s ease-in-out infinite}
+@keyframes closure-breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.14)}}
+.effect-double{animation:closure-double 2.4s ease-in-out infinite}
+@keyframes closure-double{0%,34%,58%,100%{box-shadow:0 0 0 2px #fff000}16%,46%{box-shadow:0 0 0 2px #fff000,0 0 0 6px #e5393560}}
+.effect-sweep{overflow:hidden}.effect-sweep:after{inset:-10px;background:linear-gradient(110deg,transparent 35%,#ffffffaa 48%,transparent 60%);animation:closure-sweep 2.4s linear infinite;z-index:1}
+@keyframes closure-sweep{0%{transform:translateX(-120%)}100%{transform:translateX(120%)}}
+.effect-halo{animation:closure-halo 2.4s ease-in-out infinite}
+@keyframes closure-halo{0%,100%{box-shadow:0 0 0 2px #fff000,0 0 6px #e5393530}50%{box-shadow:0 0 0 2px #fff000,0 0 15px #e53935cc}}
+.effect-stripe:before{inset:-6px;background:repeating-linear-gradient(135deg,#e5393570 0 3px,transparent 3px 7px);animation:closure-stripe 2.4s ease-in-out infinite}
+@keyframes closure-stripe{0%,100%{opacity:.2}50%{opacity:.8}}
+@media(prefers-reduced-motion:reduce){.traffic-pin.closure,.closure:before,.closure:after,.closure .closure-symbol{animation:none!important}.closure:before,.closure:after{display:none}.traffic-pin.closure{box-shadow:0 0 0 2px #fff000,0 0 0 4px #e5393540}}
+
+/* Congestion keeps the existing 32px marker size and zoom scale. */
+.traffic-pin.jam{width:32px;height:32px;border:2px solid #723714;background:#fff000;color:#17220b;isolation:isolate;animation:jam-color 2.4s ease-in-out infinite}
+.jam::before{content:"";position:absolute;inset:-3px;border:2px solid #f06c20;border-radius:inherit;box-sizing:border-box;pointer-events:none;z-index:-1;animation:closure-wave 2.4s ease-out infinite}
+.traffic-pin.jam svg{width:25px;height:25px;flex-shrink:0}
+@keyframes jam-color{0%,100%{background:#fff000;color:#17220b;border-color:#723714}50%{background:#ed6b20;color:#fff;border-color:#fff}}
+@media(prefers-reduced-motion:reduce){.traffic-pin.jam,.jam::before{animation:none!important}.jam::before{display:none}.traffic-pin.jam{box-shadow:0 0 0 2px #fff000,0 0 0 4px #f06c2040}}
+</style></head><body><main>
+<h1>渋滞アイコン、どれが見やすい？</h1><p>文字なしの10案。黄色→オレンジの色変化と波紋を、通行止めと同じ周期で表示します。</p>
+<div class="controls"><button id="motion" type="button" aria-pressed="true">動きを止める</button><span class="legend">左：実際の32px ／ 右：確認用の2倍表示</span></div>
+<div id="grid" class="grid"></div><div id="status" class="status" aria-live="polite">本番は① 車の列を仮採用しています。好きな案を押して、番号をちゃっぴーに教えてね。</div><p style="margin-top:16px"><a href="/">KPMAPに戻る</a></p>
+</main><script src="/jam-icons.js"></script><script>
+const grid=document.getElementById('grid'),status=document.getElementById('status');for(const icon of KPMAPJamIcons){const card=document.createElement('button');card.type='button';card.className='card'+(icon.id===1?' selected':'');card.setAttribute('aria-pressed',icon.id===1?'true':'false');card.innerHTML='<h2>'+icon.id+' · '+icon.name+'</h2><div class="samples"><div class="sample"><span class="traffic-pin jam" role="img" aria-label="渋滞">'+icon.html+'</span><small>実際の大きさ</small></div><div class="sample"><span class="traffic-pin jam enlarged" aria-hidden="true">'+icon.html+'</span><small>拡大確認</small></div></div><div class="map-sample"><div class="map-road"></div><span class="traffic-pin jam" aria-hidden="true">'+icon.html+'</span></div>';card.onclick=()=>{for(const c of grid.children){c.classList.remove('selected');c.setAttribute('aria-pressed','false')}card.classList.add('selected');card.setAttribute('aria-pressed','true');status.textContent=icon.id+'番「'+icon.name+'」をプレビュー中。本番へ反映するには、この番号をちゃっぴーに教えてね。'};grid.appendChild(card)}
+document.getElementById('motion').onclick=function(){const paused=document.body.classList.toggle('frozen');this.textContent=paused?'動きを再開する':'動きを止める';this.setAttribute('aria-pressed',String(!paused))};
+</script></body></html>

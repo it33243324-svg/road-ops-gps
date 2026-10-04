@@ -45,7 +45,7 @@
     const category = event.category;
     const lane = '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M7 27V18L15 10V5M24 5V27" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"/><path d="M17 16V27" stroke="currentColor" stroke-width="2" stroke-dasharray="3 2"/><path d="M10 5h10l-5 6z" fill="currentColor"/></svg>';
     const alternating = '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M9 27V6m-5 5 5-5 5 5M23 5v21m-5-5 5 5 5-5" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-    const symbols = { closed: '×', ramp: '×', accident: '!', broken: '!', falling: '!', jam: '渋' };
+    const symbols = { closed: '×', ramp: '×', accident: '!', broken: '!', falling: '!', jam: KPMAPJamIcons[0].html };
     const warning = ['accident', 'broken', 'falling', 'closed', 'ramp'].includes(category);
     return { closure:isClosure(event), html: isClosure(event)?'×':category === 'oneLane' ? alternating : isRestriction(event) ? lane : symbols[category] || '!', warning };
   }
@@ -93,7 +93,7 @@
       const markerSize=Math.round((sign.closure?36:32)*scale);
       const icon = L.divIcon({
         className: 'traffic-event-marker', iconSize: [markerSize, markerSize], iconAnchor: [markerSize / 2, markerSize / 2],
-          html: '<span class="traffic-pin' + (sign.warning ? ' warning' : '') + (sign.closure ? ' closure effect-color effect-wave' : '') +
+          html: '<span class="traffic-pin' + (sign.warning ? ' warning' : '') + (sign.closure ? ' closure effect-color effect-wave' : event.category === 'jam' ? ' jam' : '') +
           '" style="transform:scale(' + scale + ');transform-origin:top left" role="img" aria-label="' +
           escapeHtml(event.categoryLabel + (events.length > 1 ? '・交通情報' + events.length + '件' : '')) + '">' + (sign.closure?'<span class="closure-symbol">'+sign.html+'</span>':sign.html) + '</span>' + (events.length > 1 ? '<span class="traffic-cluster-count">' + events.length + '</span>' : '') + (events.some(e=>newTracker.isNew(e))?'<span class="traffic-map-new">NEW</span>':'')
       });

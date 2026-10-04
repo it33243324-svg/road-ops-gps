@@ -150,3 +150,9 @@ fs.writeFileSync(file,html);
 html=fs.readFileSync(file,'utf8');
 html=html.replace('</style>', '.p{padding-bottom:calc(96px + env(safe-area-inset-bottom,0px))}.mapactions{display:flex;align-items:center;flex-wrap:wrap;gap:12px}.mapactions .next-facilities{margin:0 0 0 max(8px,calc(32vw - 190px));box-sizing:border-box;min-width:0;width:max-content;max-width:calc(18vw - 16px);padding:12px 16px;gap:8px 12px;font-size:16px;line-height:1.5}.mapactions .next-facilities strong{font-size:18px}.mapactions .next-facility-item{font-size:20px;padding:5px 9px;overflow-wrap:anywhere}@media(max-width:900px){.mapactions .next-facilities{margin-left:8px;max-width:calc(100% - 190px);padding:10px 12px;font-size:14px}.mapactions .next-facilities strong{font-size:16px}.mapactions .next-facility-item{font-size:18px}}@media(max-width:600px){.mapactions{gap:8px}.mapactions .next-facilities{margin-left:0;flex:1;max-width:none;padding:6px 8px;gap:4px 6px;font-size:12px;line-height:1.4}.mapactions .next-facilities strong{font-size:14px}.mapactions .next-facility-item{font-size:14px;padding:3px 5px}}'+'</style>');
 fs.writeFileSync(file,html);
+
+// Shared wordless congestion icons and their comparison page.
+html=fs.readFileSync(file,'utf8').replace('<script src="/traffic-client.js">','<script src="/jam-icons.js"></script><script src="/traffic-client.js">');
+fs.writeFileSync(file,html);
+fs.copyFileSync('jam-icons.js','dist/jam-icons.js');
+fs.copyFileSync('jam-icon-preview.html','dist/jam-icon-preview.html');

@@ -20,3 +20,10 @@
 .effect-stripe:before{inset:-6px;background:repeating-linear-gradient(135deg,#e5393570 0 3px,transparent 3px 7px);animation:closure-stripe 2.4s ease-in-out infinite}
 @keyframes closure-stripe{0%,100%{opacity:.2}50%{opacity:.8}}
 @media(prefers-reduced-motion:reduce){.traffic-pin.closure,.closure:before,.closure:after,.closure .closure-symbol{animation:none!important}.closure:before,.closure:after{display:none}.traffic-pin.closure{box-shadow:0 0 0 2px #fff000,0 0 0 4px #e5393540}}
+
+/* Congestion keeps the existing 32px marker size and zoom scale. */
+.traffic-pin.jam{width:32px;height:32px;border:2px solid #723714;background:#fff000;color:#17220b;isolation:isolate;animation:jam-color 2.4s ease-in-out infinite}
+.jam::before{content:"";position:absolute;inset:-3px;border:2px solid #f06c20;border-radius:inherit;box-sizing:border-box;pointer-events:none;z-index:-1;animation:closure-wave 2.4s ease-out infinite}
+.traffic-pin.jam svg{width:25px;height:25px;flex-shrink:0}
+@keyframes jam-color{0%,100%{background:#fff000;color:#17220b;border-color:#723714}50%{background:#ed6b20;color:#fff;border-color:#fff}}
+@media(prefers-reduced-motion:reduce){.traffic-pin.jam,.jam::before{animation:none!important}.jam::before{display:none}.traffic-pin.jam{box-shadow:0 0 0 2px #fff000,0 0 0 4px #f06c2040}}
