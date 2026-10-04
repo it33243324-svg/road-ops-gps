@@ -177,3 +177,9 @@ fs.writeFileSync(file,html);
 html=fs.readFileSync(file,'utf8').replace('</style>','#loc{display:none!important}</style>');
 html=html.replace('</body>','<script>document.getElementById("loc")?.setAttribute("hidden","");</script></body>');
 fs.writeFileSync(file,html);
+
+// Query-only theme gallery: production appearance stays unchanged until selection.
+html=fs.readFileSync(file,'utf8').replace('</body>','<script src="/ui-preview-themes.js"></script></body>');
+fs.writeFileSync(file,html);
+fs.copyFileSync('ui-preview-themes.js','dist/ui-preview-themes.js');
+fs.copyFileSync('ui-preview.html','dist/ui-preview.html');
