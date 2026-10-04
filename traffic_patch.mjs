@@ -158,3 +158,5 @@ fs.copyFileSync('jam-icons.js','dist/jam-icons.js');
 fs.copyFileSync('jam-icon-preview.html','dist/jam-icon-preview.html');
 
 fs.copyFileSync('logo-preview.html','dist/logo-preview.html');
+
+fs.copyFileSync('header-preview.html','dist/header-preview.html');
