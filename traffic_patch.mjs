@@ -156,3 +156,5 @@ html=fs.readFileSync(file,'utf8').replace('<script src="/traffic-client.js">','<
 fs.writeFileSync(file,html);
 fs.copyFileSync('jam-icons.js','dist/jam-icons.js');
 fs.copyFileSync('jam-icon-preview.html','dist/jam-icon-preview.html');
+
+fs.copyFileSync('logo-preview.html','dist/logo-preview.html');
