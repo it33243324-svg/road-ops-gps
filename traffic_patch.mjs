@@ -144,7 +144,7 @@ fs.copyFileSync('facility-data.json','dist/facility-data.json');
 // Zoom-dependent road strokes and road-aligned detail labels.
 html=fs.readFileSync(file,'utf8');
 html=html.replace('</style>', '.detail-label{font-size:12px;padding:3px 7px;letter-spacing:.12em;transform:translate(-50%,-50%) rotate(var(--detail-angle,0deg));transform-origin:center}.facility-detail .detail-label{font-size:14px;padding:3px 8px}.detail-label.detail-vertical{writing-mode:vertical-rl;text-orientation:upright;letter-spacing:.16em;padding:7px 3px}'+'</style>');
-html=html.replace('</body>', `<script>(()=>{function strokes(){const z=map.getZoom(),extra=z>=16?3:z>=14?1.5:0;for(const group of [roads,sel])group.eachLayer(l=>{if(!l.setStyle||!l.options.color)return;if(l._kpmapBaseWeight===undefined)l._kpmapBaseWeight=l.options.weight;l.setStyle({weight:l._kpmapBaseWeight+extra+2})})}map.on('zoomend',strokes);r.addEventListener('change',strokes);strokes()})();</script></body>`);
+html=html.replace('</body>', `<script>(()=>{function strokes(){const z=map.getZoom(),extra=z>=16?3:z>=14?1.5:0;for(const group of [roads,sel])group.eachLayer(l=>{if(!l.setStyle||!l.options.color)return;if(l._kpmapBaseWeight===undefined)l._kpmapBaseWeight=l.options.weight;l.setStyle({weight:l._kpmapBaseWeight+extra+6})})}map.on('zoomend',strokes);r.addEventListener('change',strokes);strokes()})();</script></body>`);
 fs.writeFileSync(file,html);
 
 // Keep the next facilities beside the Google Maps action, within the left half on desktop.

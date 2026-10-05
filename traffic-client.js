@@ -34,7 +34,7 @@
 
   function intervalWidth(road) {
     const z = map.getZoom();
-    return (routeByName[road] === r.value ? 10 : 7) + (z >= 16 ? 3 : z >= 14 ? 1.5 : 0);
+    return (routeByName[road] === r.value ? 14 : 11) + (z >= 16 ? 3 : z >= 14 ? 1.5 : 0);
   }
   function updateIntervalWidths() {
     intervalLayer?.eachLayer(line => line.setStyle({
