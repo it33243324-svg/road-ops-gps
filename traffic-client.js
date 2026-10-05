@@ -8,6 +8,7 @@
   let trafficData = [];
   let userLocation = null;
   let trafficLayer = null;
+  let intervalRenderer = null;
   let zoomHooked = false;
   let lastSuccessfulFetch = 0;
   let savedNew=null;try{savedNew=JSON.parse(sessionStorage.getItem('kpmap-traffic-new')||'null');}catch{}
@@ -17,6 +18,46 @@
   const { distanceKm: km, isRegulation, isClosure, mapRank, nearbyGroups, eventAge } = KPMAPTrafficPresentation;
 
   const routeByName = { '山陽道': 'sanyo', '中国道': 'chugoku', '広島道': 'hiroshima', '広島岩国道路': 'hiroshima_iwakuni' };
+  // Keep the white edge and road identity visible while the alert color fades.
+  const intervalStyle = document.createElement('style');
+  intervalStyle.id = 'kpmap-traffic-interval-style';
+  intervalStyle.textContent = `
+    .kpmap-traffic-interval-alert{animation:kpmap-traffic-interval-blink 1s ease-in-out infinite;pointer-events:none}
+    @keyframes kpmap-traffic-interval-blink{0%,18%,82%,100%{opacity:0}32%,68%{opacity:1}}
+    @media(prefers-reduced-motion:reduce){.kpmap-traffic-interval-alert{animation:none;opacity:1}}
+  `;
+  document.head.appendChild(intervalStyle);
+
+  function renderIntervals() {
+    const intervals = trafficData.filter(event =>
+      (event.category === 'jam' || event.category === 'closed') &&
+      Array.isArray(event.mapPath) && event.mapPath.length > 1 &&
+      event.mapPath.every(point => Array.isArray(point) && point.length >= 2 &&
+        Number.isFinite(point[0]) && Number.isFinite(point[1])) &&
+      event.mapPath.some(point => km(event.mapPath[0], point) > .005));
+    if (!intervals.length) return;
+    if (!map.getPane('trafficIntervalPane')) {
+      map.createPane('trafficIntervalPane');
+      map.getPane('trafficIntervalPane').style.zIndex = '620';
+      map.getPane('trafficIntervalPane').style.pointerEvents = 'none';
+    }
+    if (!intervalRenderer) intervalRenderer = L.svg({ pane: 'trafficIntervalPane', padding: .5 });
+    // Closure strokes take precedence where a closure and a jam overlap.
+    intervals.sort((a, b) => Number(a.category === 'closed') - Number(b.category === 'closed'));
+    for (const event of intervals) {
+      const route = D[routeByName[event.road]];
+      if (!route?.color) continue;
+      const options = { renderer: intervalRenderer, pane: 'trafficIntervalPane',
+        interactive: false, lineCap: 'round', lineJoin: 'round', opacity: 1 };
+      L.polyline(event.mapPath, { ...options, color: '#fff', weight: 10,
+        className: 'kpmap-traffic-interval-edge' }).addTo(trafficLayer);
+      L.polyline(event.mapPath, { ...options, color: route.color, weight: 7,
+        className: 'kpmap-traffic-interval-road' }).addTo(trafficLayer);
+      L.polyline(event.mapPath, { ...options,
+        color: event.category === 'jam' ? '#e83d45' : '#17191e', weight: 7,
+        className: 'kpmap-traffic-interval-alert' }).addTo(trafficLayer);
+    }
+  }
   const escapeHtml = value => String(value || '').replace(/[&<>"']/g, c => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
   })[c]);
@@ -60,6 +101,7 @@
     }
     if (trafficLayer) trafficLayer.clearLayers();
     else trafficLayer = L.layerGroup().addTo(map);
+    renderIntervals();
     if (!map.getPane('trafficPane')) {
       map.createPane('trafficPane');
       map.getPane('trafficPane').style.zIndex = '650';
@@ -210,4 +252,3 @@
     el.textContent = eventAge(el.dataset.occurredAt);
   }), 60000);
 })();
-
