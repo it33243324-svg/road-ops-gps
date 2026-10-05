@@ -9,6 +9,10 @@
   let userLocation = null;
   let trafficLayer = null;
   let intervalRenderer = null;
+  let intervalLayer = null;
+  let dataSignature = null;
+  let badgeSignature = null;
+  let mapFrame = 0;
   let zoomHooked = false;
   let lastSuccessfulFetch = 0;
   let savedNew=null;try{savedNew=JSON.parse(sessionStorage.getItem('kpmap-traffic-new')||'null');}catch{}
@@ -29,6 +33,8 @@
   document.head.appendChild(intervalStyle);
 
   function renderIntervals() {
+    if (intervalLayer) intervalLayer.clearLayers();
+    else intervalLayer = L.layerGroup().addTo(map);
     const intervals = trafficData.filter(event =>
       (event.category === 'jam' || event.category === 'closed') &&
       Array.isArray(event.mapPath) && event.mapPath.length > 1 &&
@@ -50,12 +56,12 @@
       const options = { renderer: intervalRenderer, pane: 'trafficIntervalPane',
         interactive: false, lineCap: 'round', lineJoin: 'round', opacity: 1 };
       L.polyline(event.mapPath, { ...options, color: '#fff', weight: 10,
-        className: 'kpmap-traffic-interval-edge' }).addTo(trafficLayer);
+        className: 'kpmap-traffic-interval-edge' }).addTo(intervalLayer);
       L.polyline(event.mapPath, { ...options, color: route.color, weight: 7,
-        className: 'kpmap-traffic-interval-road' }).addTo(trafficLayer);
+        className: 'kpmap-traffic-interval-road' }).addTo(intervalLayer);
       L.polyline(event.mapPath, { ...options,
         color: event.category === 'jam' ? '#e83d45' : '#17191e', weight: 7,
-        className: 'kpmap-traffic-interval-alert' }).addTo(trafficLayer);
+        className: 'kpmap-traffic-interval-alert' }).addTo(intervalLayer);
     }
   }
   const escapeHtml = value => String(value || '').replace(/[&<>"']/g, c => ({
@@ -90,6 +96,16 @@
     const warning = ['accident', 'broken', 'falling', 'closed', 'ramp'].includes(category);
     return { closure:isClosure(event), html: isClosure(event)?'×':category === 'oneLane' ? alternating : isRestriction(event) ? lane : symbols[category] || '!', warning };
   }
+  function scheduleMap() {
+    if (mapFrame) return;
+    mapFrame = requestAnimationFrame(() => { mapFrame = 0; renderMap(); });
+  }
+  function refreshBadges() {
+    const signature = trafficData.map(event => newTracker.isNew(event)).join();
+    if (signature === badgeSignature) return false;
+    badgeSignature = signature;
+    return true;
+  }
   function renderMap() {
     const uprightPane = map.getPane('markerPane').parentElement;
     const kpPane = map.getPane('kpPane');
@@ -101,13 +117,12 @@
     }
     if (trafficLayer) trafficLayer.clearLayers();
     else trafficLayer = L.layerGroup().addTo(map);
-    renderIntervals();
     if (!map.getPane('trafficPane')) {
       map.createPane('trafficPane');
       map.getPane('trafficPane').style.zIndex = '650';
     }
     if (!zoomHooked) {
-      map.on('zoomend rotate', renderMap);
+      map.on('zoomend rotate', scheduleMap);
       zoomHooked = true;
     }
     const scale = map.getZoom() < 13 ? .75 : map.getZoom() < 15 ? .875 : 1;
@@ -145,7 +160,11 @@
       marker.addTo(trafficLayer);
       events.forEach(e=>{e.mapMarker = marker;});
     }
+    refreshBadges();
     map.fire("trafficrendered");
+    updateMapMeta();
+  }
+  function updateMapMeta() {
     const placed = trafficData.filter(e => e.mapPoint).length;
     meta.textContent = '地図 ' + placed + '件 ・ 一覧は現在地周辺' + (placed < trafficData.length ? ' ・ 位置未確認 ' + (trafficData.length - placed) + '件' : '');
   }
@@ -216,13 +235,21 @@
       const response = await fetch('/api/traffic?ts=' + Date.now(), { cache: 'no-store' });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || '取得エラー');
-      trafficData = (Array.isArray(data.events) ? data.events : []).filter(event => ['山陽道','中国道','広島道','広島岩国道路'].includes(String(event.road || '').trim()));
+      const events = (Array.isArray(data.events) ? data.events : []).filter(event => ['山陽道','中国道','広島道','広島岩国道路'].includes(String(event.road || '').trim()));
+      const signature = JSON.stringify(events);
+      const changed = signature !== dataSignature;
+      if (changed) trafficData = events;
       newTracker.update(trafficData);try{sessionStorage.setItem('kpmap-traffic-new',JSON.stringify(newTracker.snapshot()));}catch{}
       lastSuccessfulFetch = Date.now();
       showUpdateTime(data.fetchedAt);
       updated.classList.remove('is-stale');
-      locateEvents(trafficData);
-      renderMap();
+      if (changed) {
+        locateEvents(trafficData);
+        renderIntervals();
+        renderMap();
+        dataSignature = signature;
+      } else if (refreshBadges()) renderMap();
+      updateMapMeta();
       renderList();
     } catch (error) {
       console.error('KPMAP traffic', error);
@@ -247,7 +274,7 @@
     if (!document.hidden && Date.now() - lastSuccessfulFetch >= 30000) load();
   });
   window.addEventListener('online', load);
-  setInterval(()=>{if(!document.hidden&&trafficData.length){renderMap();renderList();}},60000);
+  setInterval(()=>{if(!document.hidden&&trafficData.length){if(refreshBadges())renderMap();renderList();}},60000);
   setInterval(() => document.querySelectorAll('.traffic-age[data-occurred-at]').forEach(el => {
     el.textContent = eventAge(el.dataset.occurredAt);
   }), 60000);

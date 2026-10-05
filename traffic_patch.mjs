@@ -51,7 +51,7 @@ html = html.replace('maxBoundsViscosity:.8,zoomSnap:.1', 'maxBoundsViscosity:.8,
 // Labels sit above restriction canvases; only their buttons capture input.
 html = html.replace('function pickKp(', "map.createPane('kpPane');map.getPane('kpPane').style.zIndex='640';map.createPane('facilityPane');map.getPane('facilityPane').style.zIndex='650';map.getPane('markerPane').parentElement.appendChild(map.getPane('facilityPane'));map.getPane('kpPane').style.pointerEvents='none';function pickKp(");
 html = html.replace('</style>', '.leaflet-kp-pane .leaflet-marker-icon{pointer-events:none}.leaflet-kp-pane .kplabel{pointer-events:auto}.map-recenter{width:48px;height:48px;background:#fff;color:#2385ff;border:1px solid #a7bac4;border-radius:50%;box-shadow:0 2px 9px #00101855;display:flex;align-items:center;justify-content:center;padding:10px;margin:0 8px 14px 0}.map-recenter svg{width:26px;height:26px}.map-recenter:focus-visible{outline:3px solid #2385ff}</style>');
-html = html.replace("{maxZoom:19,attribution:", "{maxZoom:19,updateWhenIdle:false,updateInterval:100,keepBuffer:4,attribution:");
+html = html.replace("{maxZoom:19,attribution:", "{maxZoom:19,updateWhenIdle:false,updateWhenZooming:false,updateInterval:150,keepBuffer:4,attribution:");
 const oldJump = "if(b)map.setView([b[1],b[2]],16)";
 const newJump = "if(b){pickKp(b[1],b[2],b[0],null);map.setView([b[1],b[2]],12);labels();msg.textContent=Number(b[0]).toFixed(1)+'KP を選択しました'}";
 if (!html.includes(oldJump)) throw new Error('KP jump handler missing');
@@ -61,10 +61,11 @@ const labelStart = html.indexOf('function labels(){');
 const labelEnd = html.indexOf('function drawSelected(', labelStart);
 if (labelStart < 0 || labelEnd < 0) throw new Error('KP labels block missing');
 const labelCode = html.slice(labelStart, labelEnd)
-  .replace('function labels(){kp.clearLayers();', 'const kpMarkers=new Map();function labels(){const wanted=new Set();')
+  .replace('function labels(){kp.clearLayers();', "const kpMarkers=new Map(),kpDensity=new Map();function kpRows(key,density){const id=key+':'+density;if(!kpDensity.has(id))kpDensity.set(id,(D[key]?.marks||[]).filter(x=>showK(x[0],density)));const rows=kpDensity.get(id);if(!pickedKp)return rows;const chosen=(D[key]?.marks||[]).find(x=>x[0]===pickedKp[2]&&x[1]===pickedKp[0]&&x[2]===pickedKp[1]);return chosen&&!rows.includes(chosen)?[...rows,chosen]:rows}function labels(){const wanted=new Set();")
+  .replace('for(const x of v.marks)', 'for(const x of kpRows(key,s))')
   .replace('b=map.getBounds()', 'b=map.getBounds().pad(.5)')
   .replace("if(!showK(x[0],s)||!b.contains([x[1],x[2]]))continue;", "const isPicked=!!pickedKp&&pickedKp[0]===x[1]&&pickedKp[1]===x[2]&&pickedKp[2]===x[0];if((!showK(x[0],s)&&!isPicked)||!b.contains([x[1],x[2]]))continue;")
-  .replace('n++;let t=', "n++;const id=key+':'+x[0];wanted.add(id);if(kpMarkers.has(id)){kpMarkers.get(id).getElement()?.querySelector('.kplabel')?.classList.toggle('picked',isPicked);continue}let t=")
+  .replace('n++;let t=', "n++;const id=key+':'+x[0];wanted.add(id);if(kpMarkers.has(id)){const label=kpMarkers.get(id).getElement()?.querySelector('.kplabel');if(label&&label.classList.contains('picked')!==isPicked)label.classList.toggle('picked',isPicked);continue}let t=")
   .replace('L.marker([x[1],x[2]],', 'const marker=L.marker([x[1],x[2]],')
   .replace('{icon:ic,interactive:false,zIndexOffset:', "{icon:ic,pane:'kpPane',interactive:true,keyboard:false,zIndexOffset:")
   .replace('.addTo(kp)}}kc.textContent=', '.addTo(kp);marker.getElement()?.querySelector(\".kplabel\")?.classList.toggle(\"picked\",isPicked);kpMarkers.set(id,marker)}}for(const [id,marker] of kpMarkers){if(!wanted.has(id)){kp.removeLayer(marker);kpMarkers.delete(id)}}kc.textContent=');
@@ -107,9 +108,9 @@ fs.writeFileSync(file,html);
 html = fs.readFileSync(file, 'utf8');
 html = html.replace("map.getPane('kpPane').style.pointerEvents='none';", "map.getPane('kpPane').style.pointerEvents='none';map.createPane('selectedKpPane');map.getPane('selectedKpPane').style.zIndex='850';map.getPane('selectedKpPane').style.pointerEvents='none';map.getPane('markerPane').parentElement.appendChild(map.getPane('selectedKpPane'));");
 html = html.replace("gmap.disabled=false;msg.textContent=", "gmap.disabled=false;labels();msg.textContent=");
-html = html.replace("kpMarkers.get(id).getElement()?.querySelector('.kplabel')?.classList.toggle('picked',isPicked);continue", "const existing=kpMarkers.get(id);existing.getElement()?.querySelector('.kplabel')?.classList.toggle('picked',isPicked);prioritizeKp(existing,isPicked);continue");
+html = html.replace("const label=kpMarkers.get(id).getElement()?.querySelector('.kplabel');if(label&&label.classList.contains('picked')!==isPicked)label.classList.toggle('picked',isPicked);continue", "const existing=kpMarkers.get(id),label=existing.getElement()?.querySelector('.kplabel');if(label&&label.classList.contains('picked')!==isPicked)label.classList.toggle('picked',isPicked);prioritizeKp(existing,isPicked);continue");
 html = html.replace('kpMarkers.set(id,marker)', 'prioritizeKp(marker,isPicked);kpMarkers.set(id,marker)');
-html = html.replace('const kpMarkers=new Map();', "function prioritizeKp(marker,selected){if(marker._normalKpZ===undefined)marker._normalKpZ=marker.options.zIndexOffset;const pane=selected?'selectedKpPane':'kpPane';marker.options.pane=pane;const icon=marker.getElement();if(icon&&icon.parentElement!==map.getPane(pane))map.getPane(pane).appendChild(icon);marker.setZIndexOffset(selected?10000:marker._normalKpZ)}const kpMarkers=new Map();");
+html = html.replace('const kpMarkers=new Map(),', "function prioritizeKp(marker,selected){if(marker._normalKpZ===undefined)marker._normalKpZ=marker.options.zIndexOffset;const pane=selected?'selectedKpPane':'kpPane';marker.options.pane=pane;const icon=marker.getElement();if(icon&&icon.parentElement!==map.getPane(pane))map.getPane(pane).appendChild(icon);const z=selected?10000:marker._normalKpZ;if(marker.options.zIndexOffset!==z)marker.setZIndexOffset(z)}const kpMarkers=new Map(),");
 html = html.replace("forEach(el=>el.classList.remove('picked'));return", "forEach(el=>el.classList.remove('picked'));labels();return");
 html = html.replace('</style>', '.kpmark .kpstem{display:none}.kpmark.up .kplabel,.kpmark.down .kplabel{top:0;bottom:auto;transform:translate(-50%,-50%)}.kpmark.up .kplabel.picked,.kpmark.down .kplabel.picked{transform:translate(-50%,-50%) scale(1.18)}.leaflet-selectedKp-pane .leaflet-marker-icon{pointer-events:none}.leaflet-selectedKp-pane .kplabel{pointer-events:auto}'+'</style>');
 fs.writeFileSync(file,html);

@@ -46,8 +46,13 @@ async function main(){
  await until(()=>w.document.querySelector('.map-tool')&&w.document.querySelector('.traffic-event-marker'),'scripts');
  const doc=w.document,map=w.eval('map');
  assert.deepEqual(errors,[]);
+ await wait(80);
+ const markerBefore=doc.querySelector('.traffic-event-marker');
+ doc.querySelector('#trafficRefresh').click();await wait(30);
+ assert.equal(doc.querySelector('.traffic-event-marker'),markerBefore,'Identical feed preserves marker DOM instead of rebuilding');
  assert.equal(doc.querySelector('#locationPanel').parentElement,doc.querySelector('#m'),'Location summary stays inside the map for fullscreen');
- assert.equal(doc.querySelector('#locationKp').nextElementSibling,null);\n assert.equal(doc.querySelector('.location-road-stack small').textContent,'最寄りKP');
+ assert.equal(doc.querySelector('#locationKp').nextElementSibling,null);
+ assert.equal(doc.querySelector('.location-road-stack small').textContent,'最寄りKP');
  assert.equal(w.getComputedStyle(doc.querySelector('.location-road-stack')).display,'flex');
  assert.equal(w.getComputedStyle(doc.querySelector('.location-road-stack')).flexDirection,'column');
  assert.equal(w.getComputedStyle(doc.querySelector('.location-main')).alignItems,'flex-end');
@@ -183,6 +188,15 @@ async function main(){
  tools[1].click();map.fire('dragstart');assert.equal(tools[1].getAttribute('aria-pressed'),'false','Manual pan stops following');
  gpsError({code:2});
  assert.equal(doc.querySelector('#locationDirection').textContent,'上り/下り　取得不可');
+ const tile=Object.values(map._layers).find(l=>l instanceof w.L.TileLayer);
+ assert.equal(tile.options.updateWhenZooming,false,'Pinch zoom defers intermediate-scale requests');
+ const D=w.eval('D');
+ for(const density of [10,5,2,1,.5,.1])for(const key of ['sanyo','chugoku','hiroshima','hiroshima_iwakuni']){
+  const picked=w.eval('pickedKp');
+  const expected=D[key].marks.filter(x=>w.eval('showK')(x[0],density));
+  const selected=picked&&D[key].marks.find(x=>x[0]===picked[2]&&x[1]===picked[0]&&x[2]===picked[1]);if(selected&&!expected.includes(selected))expected.push(selected);
+  assert.deepEqual(Array.from(w.eval('kpRows')(key,density),x=>x[0]),Array.from(expected,x=>x[0]),'Cached KP density keeps the exact original KP set');
+ }
  const oldTime=doc.querySelector('#trafficUpdated').dateTime;
  failFetch=true;doc.querySelector('#trafficRefresh').click();await wait(30);
  assert.equal([...doc.querySelectorAll('.traffic-event-marker')].reduce((n,e)=>n+(Number(e.querySelector('.traffic-cluster-count')?.textContent)||1),0),32,'Failed update preserves every traffic record');
@@ -191,6 +205,7 @@ async function main(){
  failFetch=false;
  const auto=intervals.find(x=>x.ms===60000);assert(auto);await auto.fn();await wait(30);
  assert(!doc.querySelector('#trafficUpdated').classList.contains('is-stale'));
+ assert(!doc.querySelector('#trafficMeta').textContent.includes('失敗'),'Identical successful retry clears the failure message');
  assert(fetches>=3,'Initial, manual and automatic requests must run');
  map.setView([34.7,132.5],12,{animate:false});const recenterZoom=map.getZoom();
  const beforeRestart=watchStarts;now+=31000;
