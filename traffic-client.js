@@ -32,6 +32,17 @@
   `;
   document.head.appendChild(intervalStyle);
 
+  function intervalWidth(road) {
+    const z = map.getZoom();
+    return (routeByName[road] === r.value ? 10 : 7) + (z >= 16 ? 3 : z >= 14 ? 1.5 : 0);
+  }
+  function updateIntervalWidths() {
+    intervalLayer?.eachLayer(line => line.setStyle({
+      weight: intervalWidth(line.options.trafficRoad) + (line.options.intervalEdge ? 3 : 0)
+    }));
+  }
+  map.on('zoomend', updateIntervalWidths);
+  r.addEventListener('change', updateIntervalWidths);
   function renderIntervals() {
     if (intervalLayer) intervalLayer.clearLayers();
     else intervalLayer = L.layerGroup().addTo(map);
@@ -54,13 +65,14 @@
       const route = D[routeByName[event.road]];
       if (!route?.color) continue;
       const options = { renderer: intervalRenderer, pane: 'trafficIntervalPane',
-        interactive: false, lineCap: 'round', lineJoin: 'round', opacity: 1 };
-      L.polyline(event.mapPath, { ...options, color: '#fff', weight: 10,
+        interactive: false, lineCap: 'round', lineJoin: 'round', opacity: 1, trafficRoad: event.road };
+      const weight = intervalWidth(event.road);
+      L.polyline(event.mapPath, { ...options, color: '#fff', weight: weight + 3, intervalEdge: true,
         className: 'kpmap-traffic-interval-edge' }).addTo(intervalLayer);
-      L.polyline(event.mapPath, { ...options, color: route.color, weight: 7,
+      L.polyline(event.mapPath, { ...options, color: route.color, weight,
         className: 'kpmap-traffic-interval-road' }).addTo(intervalLayer);
       L.polyline(event.mapPath, { ...options,
-        color: event.category === 'jam' ? '#e83d45' : '#17191e', weight: 7,
+        color: event.category === 'jam' ? '#e83d45' : '#17191e', weight,
         className: 'kpmap-traffic-interval-alert' }).addTo(intervalLayer);
     }
   }
