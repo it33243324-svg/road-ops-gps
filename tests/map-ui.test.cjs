@@ -72,6 +72,7 @@ async function main(){
  assert(+map.getPane('detailLabelPane').style.zIndex<+map.getPane('kpPane').style.zIndex);
  map.setZoom(12,{animate:false});await wait(60);
  assert.equal(doc.querySelector('.detail-label'),null,'Wide view hides detail labels');
+ for(const [z,expected] of [[9,'.65'],[10,'.72'],[11,'.8'],[12,'.9'],[13,'1']]){map.setZoom(z,{animate:false});await wait(30);assert.equal(doc.querySelector('#m').style.getPropertyValue('--kpmap-label-scale'),expected);}map.setZoom(12,{animate:false});await wait(60);
  assert.equal(doc.querySelector('#q').value,'');
  assert.equal(doc.querySelector('#gmap').disabled,true);
  assert.equal(doc.querySelector('#trafficRadius').value,'20');
@@ -216,7 +217,7 @@ async function main(){
  assert(doc.querySelector('.traffic-map-new'),'New traffic is visibly flagged on the map');
  now+=10*60000;await auto.fn();await wait(30);assert.equal(doc.querySelector('.traffic-map-new'),null,'Badge expires at ten minutes without feed resets');
  fixture.events.push({...extra,category:'closed',categoryLabel:'通行止',reason:'test closure'});await auto.fn();await wait(30);
- const closure=Object.values(map._layers).find(x=>x.getElement?.()?.querySelector('.closure'));assert(closure,'Closure icon uses a warning effect');assert.equal(closure.options.icon.options.iconSize[0],27,'Closure icon is 12.5 percent larger at wide zoom');assert(closure.getElement().querySelector('.closure-symbol').textContent==='×');assert(closure.getElement().querySelector('.closure').classList.contains('effect-color'));assert(closure.getElement().querySelector('.closure').classList.contains('effect-wave')); closure.getElement().click();assert(closure.isPopupOpen(),'Effect must not block popup clicks');
+ const closure=Object.values(map._layers).find(x=>x.getElement?.()?.querySelector('.closure'));assert(closure,'Closure icon uses a warning effect');assert.equal(closure.options.icon.options.iconSize[0],32,'Closure icon is enlarged by twenty percent at wide zoom');assert(closure.getElement().querySelector('.closure-symbol').textContent==='×');assert(closure.getElement().querySelector('.closure').classList.contains('effect-color'));assert(closure.getElement().querySelector('.closure').classList.contains('effect-wave')); closure.getElement().click();assert(closure.isPopupOpen(),'Effect must not block popup clicks');
  assert.deepEqual(errors,[]);
  console.log('PASS: complete real-data page, individual markers, existing KP/Google/facility controls, GPS walk/vehicle rules, heading projection, follow/pan, fullscreen fallback and refresh failure recovery');
  dom.window.close();

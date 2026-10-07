@@ -160,11 +160,12 @@
         uprightPane.appendChild(map.getPane(pane));
       }
       const sign = signFor(event);
-      const markerSize=Math.round((sign.closure?36:32)*scale);
+      const visualScale=scale*(sign.closure||event.category==='jam'?1.2:1);
+      const markerSize=Math.round((sign.closure?36:32)*visualScale);
       const icon = L.divIcon({
         className: 'traffic-event-marker', iconSize: [markerSize, markerSize], iconAnchor: [markerSize / 2, markerSize / 2],
           html: '<span class="traffic-pin' + (sign.warning ? ' warning' : '') + (sign.closure ? ' closure effect-color effect-wave' : event.category === 'jam' ? ' jam' : '') +
-          '" style="transform:scale(' + scale + ');transform-origin:top left" role="img" aria-label="' +
+          '" style="transform:scale(' + visualScale + ');transform-origin:top left" role="img" aria-label="' +
           escapeHtml(event.categoryLabel + (events.length > 1 ? '・交通情報' + events.length + '件' : '')) + '">' + (sign.closure?'<span class="closure-symbol">'+sign.html+'</span>':sign.html) + '</span>' + (events.length > 1 ? '<span class="traffic-cluster-count">' + events.length + '</span>' : '') + (events.some(e=>newTracker.isNew(e))?'<span class="traffic-map-new">NEW</span>':'')
       });
       const marker = L.marker(event.mapPoint, { pane, icon, zIndexOffset: 5000, keyboard: true,
