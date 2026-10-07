@@ -55,7 +55,8 @@
     if (!intervals.length) return;
     if (!map.getPane('trafficIntervalPane')) {
       map.createPane('trafficIntervalPane');
-      map.getPane('trafficIntervalPane').style.zIndex = '620';
+      // Match the normal road overlay pane; labels and icons stay above these strokes.
+      map.getPane('trafficIntervalPane').style.zIndex = getComputedStyle(map.getPane('overlayPane')).zIndex || '400';
       map.getPane('trafficIntervalPane').style.pointerEvents = 'none';
     }
     if (!intervalRenderer) intervalRenderer = L.svg({ pane: 'trafficIntervalPane', padding: .5 });
