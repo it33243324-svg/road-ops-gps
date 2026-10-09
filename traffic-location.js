@@ -159,10 +159,12 @@
         if (kp && route.marks?.length) {
           const value = Number(kp[1]);
           const mark = route.marks.reduce((a, b) => Math.abs(b[0] - value) < Math.abs(a[0] - value) ? b : a);
-          if (Math.abs(mark[0] - value) <= 0.1) {
+          if (value >= route.marks[0][0] && value <= route.marks.at(-1)[0] && Math.abs(mark[0] - value) <= 0.050001) {
             event.mapPoint = [mark[1], mark[2]];
             event.mapQuality = 'kp';
             event.mapLocationNote = '交通情報のKPから照合した参考位置';
+          } else {
+            event.mapLocationNote = '交通情報のKPの座標は未収録です';
           }
         }
       }

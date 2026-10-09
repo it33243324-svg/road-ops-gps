@@ -45,6 +45,14 @@ assert(Math.abs(hi.segs[0][0][0]-34.3451588)<.0001&&Math.abs(hi.segs[0][0][1]-13
 assert(Math.abs(hi.segs[0].at(-1)[0]-34.336845)<.0001&&Math.abs(hi.segs[0].at(-1)[1]-132.294527)<.0001,'Route ends at Hatsukaichi JCT');
 let routeKm=0;for(let i=1;i<hi.segs[0].length;i++){const a=hi.segs[0][i-1],b=hi.segs[0][i];routeKm+=12742*Math.asin(Math.sqrt(Math.sin((b[0]-a[0])*Math.PI/360)**2+Math.cos(a[0]*Math.PI/180)*Math.cos(b[0]*Math.PI/180)*Math.sin((b[1]-a[1])*Math.PI/360)**2));}
 assert(routeKm>1.9&&routeKm<2.5,'Corrected IC–JCT geometry follows the roughly 2km branch');
+const miyoshi=routeData.chugoku;
+for(const value of [288.7,288.8]){
+ const mark=miyoshi.marks.find(m=>m[0]===value);
+ assert(mark&&mark[1]<34.8031&&mark[2]<132.910542,'Miyoshi KP must stay on the westbound mainline, not climb north up the IC access road');
+}
+assert(!miyoshi.segs.flat().some(p=>p[0]>34.8034&&p[1]>132.9104&&p[1]<132.91055),'The IC spur is excluded from road drawing and traffic interval geometry');
+assert.equal(miyoshi.facilities.find(f=>f.name==='三次東IC').lat,34.805622,'The actual IC facility marker stays on the access road');
+assert.equal(miyoshi.kpCorrections[0].method,'mainline-reference-interpolation');
 
 async function until(check,label){for(let i=0;i<100;i++){if(check())return;await wait(20);}throw new Error('Timed out: '+label);}
 function gps(lat,lon,speed,heading,accuracy=8){now+=1000;gpsCallback({timestamp:now,coords:{latitude:lat,longitude:lon,speed,heading,accuracy}});}
@@ -175,6 +183,32 @@ async function main(){
  assert.equal(doc.querySelectorAll('.leaflet-selectedKp-pane .kplabel.picked').length,1,'KP input must update the single foreground selection');
  assert.equal(doc.querySelectorAll('.leaflet-selectedKp-pane .kplabel:not(.picked)').length,0,'Old selection must return to its ordinary pane');
  assert.equal(tools[1].getAttribute('aria-pressed'),'false','KP jump must stop following');
+ const beforeUnavailable=map.getCenter();
+ input.value='419.4';input.dispatchEvent(new w.Event('input',{bubbles:true}));
+ assert.equal(w.eval('pickedKp'),null,'Unrecorded 419.4 KP must not silently select the 418.7 endpoint');
+ assert(doc.querySelector('#go').disabled&&doc.querySelector('#gmap').disabled);
+ assert.equal(input.getAttribute('aria-invalid'),'true');
+ assert.equal(doc.querySelector('#kpInputStatus').textContent,'このKPは未収録です');
+ assert(!doc.querySelector('#kpInputStatus').hidden);
+ assert.equal(doc.querySelectorAll('.kplabel.picked').length,0,'Invalid input clears the previous highlight');
+ doc.querySelector('#go').onclick();
+ assert(map.getCenter().equals(beforeUnavailable),'Even direct invocation must not move the map to a substituted KP');
+ input.value='418.7';input.dispatchEvent(new w.Event('input',{bubbles:true}));
+ assert.equal(w.eval('pickedKp')[2],418.7,'The last recorded KP stays selectable');
+ input.value='38.8';input.dispatchEvent(new w.Event('input',{bubbles:true}));
+ assert.equal(w.eval('pickedKp'),null,'Below-range values must not clamp to the first KP');
+ input.value='292.04';input.dispatchEvent(new w.Event('input',{bubbles:true}));
+ assert.equal(w.eval('pickedKp')[2],292,'Decimal input still rounds within the covered 0.1 KP data');
+ doc.querySelector('#r').value='hiroshima';doc.querySelector('#r').dispatchEvent(new w.Event('change'));
+ assert.equal(w.eval('pickedKp'),null,'Changing to a road without this KP clears the selection');
+ assert(doc.querySelector('#gmap').disabled&&doc.querySelector('#go').disabled);
+ doc.querySelector('#r').value='sanyo';doc.querySelector('#r').dispatchEvent(new w.Event('change'));
+ input.value='';input.dispatchEvent(new w.Event('input',{bubbles:true}));
+ assert(doc.querySelector('#kpInputStatus').hidden,'Clearing the input clears the unavailable message');
+ assert.equal(input.getAttribute('aria-invalid'),'false');
+ input.value='292';input.dispatchEvent(new w.Event('input',{bubbles:true}));doc.querySelector('#go').click();
+ assert.equal(w.eval('pickedKp')[2],292);
+ assert(doc.querySelector('#kpInputStatus').hidden);
  tools[2].click();assert.equal(map.getBearing(),0,'North-up switch must work');
  tools[0].click();await wait(80);
  assert(doc.querySelector('#m').classList.contains('map-fullscreen'));

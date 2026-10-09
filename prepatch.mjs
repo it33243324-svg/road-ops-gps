@@ -1,6 +1,27 @@
 import fs from 'fs';
 const p='build.mjs';
 let s=fs.readFileSync(p,'utf8');
+// Keep the IC access road out of China's mainline interpolation. The source
+// assigns both the JCT and the off-mainline IC the same 288.6 KP.
+const mainlineAnchor='const DATA={};';
+const mainlineCorrection=`let miyoshiMainlineCorrected=false;
+const miyoshiRoad='中国自動車道',miyoshiJct='三次東JCT',miyoshiIc='三次東';
+const miyoshiSpur=PATH.features.find(f=>f.properties?.road_name===miyoshiRoad&&f.properties?.source===miyoshiJct&&f.properties?.target===miyoshiIc);
+if(miyoshiSpur){
+ const jct=POINT.features.find(f=>f.properties?.road_name===miyoshiRoad&&f.properties?.name===miyoshiJct);
+ const ic=POINT.features.find(f=>f.properties?.road_name===miyoshiRoad&&f.properties?.name===miyoshiIc);
+ const onward=PATH.features.find(f=>f.properties?.road_name===miyoshiRoad&&f.properties?.source===miyoshiIc&&f.properties?.target==='三次');
+ if(!jct||!ic||!onward||onward.geometry?.type!=='LineString'||Number(jct.properties.kp)!==288.6||Number(ic.properties.kp)!==288.6)throw Error('三次東の元データが変更されています。KP補正の再確認が必要です');
+ const co=jct.geometry.coordinates,index=onward.geometry.coordinates.findIndex(p=>Math.abs(p[0]-co[0])<.000001&&Math.abs(p[1]-co[1])<.000001);
+ if(index<1||onward.geometry.coordinates.length-index<2)throw Error('三次東JCTの本線接続点が見つかりません');
+ onward.geometry={type:'LineString',coordinates:onward.geometry.coordinates.slice(index)};
+ onward.properties={...onward.properties,source:miyoshiJct};
+ PATH.features=PATH.features.filter(f=>f!==miyoshiSpur);
+ miyoshiMainlineCorrected=true;
+}
+`;
+if(!s.includes(mainlineAnchor))throw Error('route data generation anchor not found');
+s=s.replace(mainlineAnchor,mainlineCorrection+mainlineAnchor);
 const old=`// 広島岩国道路はE2山陽道と同一路面を通るため、山陽道の高精度固定線形から廿日市〜大竹区間を抽出する。
 if(DATA.sanyo?.segs?.length&&DATA.hiroshima_iwakuni){const hi=[];for(const seg of DATA.sanyo.segs){const pts=seg.filter(p=>p[0]>=34.235&&p[0]<=34.365&&p[1]>=132.205&&p[1]<=132.345);if(pts.length>1)hi.push(pts)}if(hi.length){DATA.hiroshima_iwakuni.segs=hi;DATA.hiroshima_iwakuni.quality='official-derived'}}`;
 const neu=`// OSM道路中心線に合わせて廿日市IC〜廿日市JCTの線形を修正。山陽道と重なる区間は二重描画しない。
@@ -17,6 +38,7 @@ if(DATA.hiroshima_iwakuni){
 if(!s.includes(old)) throw new Error('target patch block not found');s=s.replace(old,neu);
 const dataAnchor="if(!DATA.chugoku||DATA.chugoku.marks.length<2)throw Error('中国道KP固定データの生成に失敗しました');";
 const keep=`DATA.chugoku.color='#ec5bb4';
+if(miyoshiMainlineCorrected)DATA.chugoku.kpCorrections=[{start:288.6,end:293.6,method:'mainline-reference-interpolation',note:'三次東IC接続道路を除き、三次東JCT〜三次ICの本線に沿って補間'}];
 const KEEP=new Set(Object.keys(DATA));
 `;
 if(!s.includes(dataAnchor)) throw new Error('DATA filter anchor not found');s=s.replace(dataAnchor,keep+dataAnchor);

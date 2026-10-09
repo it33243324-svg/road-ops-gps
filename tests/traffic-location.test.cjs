@@ -28,6 +28,11 @@ const unknown = {road:'山陽道',title:'まだ登録していないTN付近',di
 locate.resolveEvents([unknown],routes,catalogue,byName);
 assert.equal(unknown.mapQuality,'unresolved');
 assert.equal(unknown.mapPoint,undefined,'Unknown positions must not inherit another event or schematic coordinates');
+const unrecorded=[419.4,418.8].map(kp=>({road:'山陽道',title:kp+'KP付近',direction:'下り'}));
+locate.resolveEvents(unrecorded,routes,catalogue,byName);
+for(const event of unrecorded){assert.equal(event.mapPoint,undefined,'Unrecorded KP traffic must not clamp to a road endpoint');assert.equal(event.mapQuality,'unresolved');assert(event.mapLocationNote.includes('未収録'));}
+const covered={road:'山陽道',title:'418.7KP付近',direction:'下り'};
+locate.resolveEvents([covered],routes,catalogue,byName);assert.equal(covered.mapQuality,'kp');
 assert.equal(locate.normalize('米満ﾄﾝﾈﾙ'),locate.normalize('米満TN'));
 const bend = {segs:[[[34,132],[34.02,132],[34.02,132.04]]]};
 const path = locate.intervalPath(bend,[34,132],[34.02,132.04]);

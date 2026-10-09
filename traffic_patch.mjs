@@ -56,6 +56,9 @@ const oldJump = "if(b)map.setView([b[1],b[2]],16)";
 const newJump = "if(b){pickKp(b[1],b[2],b[0],null);map.setView([b[1],b[2]],12);labels();msg.textContent=Number(b[0]).toFixed(1)+'KP を選択しました'}";
 if (!html.includes(oldJump)) throw new Error('KP jump handler missing');
 html = html.replace(oldJump, newJump);
+const oldKpLookup="let v=D[r.value],n=+q.value;if(!v.marks.length)return;let b=v.marks.reduce((a,x)=>Math.abs(x[0]-n)<Math.abs(a[0]-n)?x:a,v.marks[0]);";
+if(!html.includes(oldKpLookup))throw new Error('KP lookup handler missing');
+html=html.replace(oldKpLookup,'const b=selectEnteredKp();if(!b)return;');
 html = html.replace("el.classList.add('picked');", "if(el)el.classList.add('picked');");
 const labelStart = html.indexOf('function labels(){');
 const labelEnd = html.indexOf('function drawSelected(', labelStart);
@@ -80,7 +83,26 @@ html = html.replace('</style>', ".facility .fname{background:color-mix(in srgb,v
 html = html.replace('</style>', '.facility{--fc:#ffc16b!important}</style>');
 html = html.replace('</style>', ".facility-zoomed .facility{font-size:12px;line-height:17px}.facility-zoomed .facility .fname{padding:3px 7px}.facility-zoomed .facility .dot{width:17px;height:17px;font-size:8px}.facility-detail .facility{font-size:14px;line-height:20px}.facility-detail .facility .fname{padding:4px 8px}.facility-detail .facility .dot{width:20px;height:20px;font-size:9px}" + '</style>');
 html = html.replace('</body>', "<script>function updateFacilityScale(){const container=map.getContainer(),z=map.getZoom();container.classList.toggle('facility-zoomed',z>=14);container.classList.toggle('facility-detail',z>=16);container.style.setProperty('--kpmap-label-scale',z<10?'.65':z<11?'.72':z<12?'.8':z<13?'.9':'1')}map.on('zoomend',updateFacilityScale);updateFacilityScale();</script>" + '</body>');
-html = html.replace('</body>', "<script>function selectEnteredKp(){const value=q.value.trim(),road=D[r.value],n=Number(value);if(!value||!Number.isFinite(n)||!road?.marks?.length){pickedKp=null;gmap.disabled=true;go.disabled=true;document.querySelectorAll('.kplabel.picked').forEach(el=>el.classList.remove('picked'));return}const target=road.marks.reduce((a,x)=>Math.abs(x[0]-n)<Math.abs(a[0]-n)?x:a,road.marks[0]);pickKp(target[1],target[2],target[0],null);go.disabled=false;labels();msg.textContent=Number(target[0]).toFixed(1)+'KP を選択しました'}q.addEventListener('input',selectEnteredKp);r.addEventListener('change',()=>{if(q.value.trim())selectEnteredKp()});</script>" + '</body>');
+html = html.replace('</body>', `<script>
+const kpInputStatus=document.createElement('span');kpInputStatus.id='kpInputStatus';kpInputStatus.hidden=true;kpInputStatus.setAttribute('role','status');kpInputStatus.setAttribute('aria-live','polite');q.parentElement.appendChild(kpInputStatus);q.setAttribute('aria-describedby',kpInputStatus.id);
+function clearEnteredKp(message=''){
+ pickedKp=null;gmap.disabled=true;go.disabled=true;document.querySelectorAll('.kplabel.picked').forEach(el=>el.classList.remove('picked'));labels();
+ q.setAttribute('aria-invalid',message?'true':'false');kpInputStatus.hidden=!message;kpInputStatus.textContent=message;return null;
+}
+function selectEnteredKp(){
+ const value=q.value.trim(),road=D[r.value],n=Number(value),marks=road?.marks;
+ if(!value)return clearEnteredKp();
+ if(!Number.isFinite(n)||!marks?.length)return clearEnteredKp('このKPは未収録です');
+ // Round within covered 0.1 KP data only. Never clamp an unrecorded KP to an endpoint.
+ if(n<marks[0][0]||n>marks[marks.length-1][0])return clearEnteredKp('このKPは未収録です');
+ const target=marks.reduce((a,x)=>Math.abs(x[0]-n)<Math.abs(a[0]-n)?x:a,marks[0]);
+ if(Math.abs(target[0]-n)>.050001)return clearEnteredKp('このKPは未収録です');
+ q.setAttribute('aria-invalid','false');kpInputStatus.hidden=true;kpInputStatus.textContent='';
+ pickKp(target[1],target[2],target[0],null);go.disabled=false;labels();msg.textContent=Number(target[0]).toFixed(1)+'KP を選択しました';return target;
+}
+q.addEventListener('input',selectEnteredKp);r.addEventListener('change',selectEnteredKp);
+</script>` + '</body>');
+html=html.replace('</style>','#kpInputStatus{color:#b62535;font-size:12px;font-weight:700}#q[aria-invalid="true"]{border-color:#b62535}</style>');
 html = html.replace('</style>', "#go:disabled{opacity:.5}#go:not(:disabled){position:relative;overflow:visible;background:#f6a13d;color:#472506;border-color:#df811c;font-weight:800;animation:kp-go-glow 2.8s ease-in-out infinite}#go:not(:disabled):hover{background:#ee942b}#go:not(:disabled)::before,#go:not(:disabled)::after{content:\"\";position:absolute;inset:-3px;border:2px solid #f6a13d;border-radius:inherit;pointer-events:none;animation:gmap-ripple 2.6s ease-out infinite}#go:not(:disabled)::after{animation-delay:-1.3s}@keyframes kp-go-glow{0%,100%{box-shadow:0 3px 10px #e28a2233}50%{box-shadow:0 0 0 3px #f6a13d22,0 4px 14px #e28a2244}}@media(prefers-reduced-motion:reduce){#go:not(:disabled),#go:not(:disabled)::before,#go:not(:disabled)::after{animation:none}#go:not(:disabled)::before,#go:not(:disabled)::after{display:none}}" + '</style>');
 html = html.replace('</body>', "<script>r.value='sanyo';q.value='';q.autocomplete='off';pickedKp=null;go.disabled=true;gmap.disabled=true;drawSelected(false);</script>" + '</body>');
 html = html.replace('placeholder="KP 123.4"', 'placeholder="KPを入力してください"');
