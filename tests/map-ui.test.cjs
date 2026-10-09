@@ -35,6 +35,9 @@ assert(dataEnd>dataStart,'Built route data is valid JSON');
 const routeData=JSON.parse(builtHtml.slice(dataStart,dataEnd)),hi=routeData.hiroshima_iwakuni;
 assert.equal(hi.quality,'osm-road-aligned');
 assert.equal(hi.marks.length,26,'Hiroshima-Iwakuni keeps its existing 0–2.5 KP range');
+assert(Math.abs(hi.marks[0][1]-34.336845)<.00001&&Math.abs(hi.marks[0][2]-132.294527)<.00001,'Hiroshima-Iwakuni 0 KP is at Hatsukaichi JCT');
+assert(Math.abs(hi.marks.at(-1)[1]-34.3451588)<.00001&&Math.abs(hi.marks.at(-1)[2]-132.3131984)<.00001,'KP increases toward Hatsukaichi IC, not toward the JCT');
+assert(hi.marks.every((mark,i)=>mark[0]===Number((i/10).toFixed(1))),'KP input remains sorted at 0.1km spacing');
 assert(Math.abs(hi.segs[0][0][0]-34.3451588)<.0001&&Math.abs(hi.segs[0][0][1]-132.3131984)<.0001,'Route starts at Hatsukaichi IC');
 assert(Math.abs(hi.segs[0].at(-1)[0]-34.336845)<.0001&&Math.abs(hi.segs[0].at(-1)[1]-132.294527)<.0001,'Route ends at Hatsukaichi JCT');
 let routeKm=0;for(let i=1;i<hi.segs[0].length;i++){const a=hi.segs[0][i-1],b=hi.segs[0][i];routeKm+=12742*Math.asin(Math.sqrt(Math.sin((b[0]-a[0])*Math.PI/360)**2+Math.cos(a[0]*Math.PI/180)*Math.cos(b[0]*Math.PI/180)*Math.sin((b[1]-a[1])*Math.PI/360)**2));}
