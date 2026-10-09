@@ -10,7 +10,7 @@ const facilityData=`for(const [key,v] of Object.entries(DATA)){
   let name=String(pr.name||'');if(type==='IC'&&!/IC$/.test(name))name+='IC';if(type==='SIC'&&!/(SIC|スマートIC)$/.test(name))name+='SIC';if(type==='JCT'&&!/JCT$/.test(name))name+='JCT';return{name,type,lat:+co[1],lng:+co[0]};
  }).filter(x=>Number.isFinite(x.lat)&&Number.isFinite(x.lng)&&inside([x.lat,x.lng]));v.facilities=fsx;
 }
-if(DATA.hiroshima_iwakuni)DATA.hiroshima_iwakuni.facilities=[{name:'廿日市IC',type:'IC',lat:34.34519,lng:132.31322},{name:'廿日市JCT',type:'JCT',lat:34.336845,lng:132.294527}];
+if(DATA.hiroshima_iwakuni)DATA.hiroshima_iwakuni.facilities=[{name:'廿日市IC',type:'IC',lat:34.34519,lng:132.31322},{name:'廿日市JCT',type:'JCT',lat:34.3388148,lng:132.2984286}];
 `;
 if(!s.includes(dataAnchor))throw new Error('facility data anchor not found');s=s.replace(dataAnchor,facilityData+dataAnchor);
 

@@ -6,10 +6,12 @@ if(DATA.sanyo?.segs?.length&&DATA.hiroshima_iwakuni){const hi=[];for(const seg o
 const neu=`// OSM道路中心線に合わせて廿日市IC〜廿日市JCTの線形を修正。山陽道と重なる区間は二重描画しない。
 if(DATA.hiroshima_iwakuni){
  const line=[[34.3451588,132.3131984],[34.3451267,132.3121834],[34.3451106,132.3116759],[34.3450769,132.3105652],[34.3450635,132.3102579],[34.344812,132.308439],[34.3443762,132.306996],[34.3434756,132.3051443],[34.3388148,132.2984286],[34.3364604,132.2958663],[34.3362869,132.2949904],[34.3367262,132.2942577],[34.336845,132.294527]];
- const c=cum(line),total=c.at(-1);
+ // KPの基準はJCT分岐点から料金所まで。接続ランプと営業距離2.5kmを混ぜない。
+ const kpLine=line.slice(0,9),c=cum(kpLine),total=c.at(-1);
  DATA.hiroshima_iwakuni.segs=[line];DATA.hiroshima_iwakuni.marks=[];
- for(let k=0;k<=2.5+1e-8;k+=.1){const p=at(line,c,(1-k/2.5)*total);DATA.hiroshima_iwakuni.marks.push([+k.toFixed(1),+p[0].toFixed(6),+p[1].toFixed(6)])}
+ for(let k=0;k<=1.5+1e-8;k+=.1){const p=at(kpLine,c,(1-k/1.5)*total);DATA.hiroshima_iwakuni.marks.push([+k.toFixed(1),+p[0].toFixed(6),+p[1].toFixed(6)])}
  // 現地KPは廿日市JCTが0、廿日市IC側へ増加。営業距離の起点とは逆向き。
+ DATA.hiroshima_iwakuni.kpCalibration={start:0,end:1.5,method:'reference-point-interpolation',reference:'廿日市JCT分岐点〜廿日市料金所（約1.5KP）'};
  DATA.hiroshima_iwakuni.quality='osm-road-aligned';
 }`;
 if(!s.includes(old)) throw new Error('target patch block not found');s=s.replace(old,neu);

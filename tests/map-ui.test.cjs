@@ -34,9 +34,12 @@ for(let i=dataStart;i<builtHtml.length;i++){const c=builtHtml[i];if(inString){if
 assert(dataEnd>dataStart,'Built route data is valid JSON');
 const routeData=JSON.parse(builtHtml.slice(dataStart,dataEnd)),hi=routeData.hiroshima_iwakuni;
 assert.equal(hi.quality,'osm-road-aligned');
-assert.equal(hi.marks.length,26,'Hiroshima-Iwakuni keeps its existing 0–2.5 KP range');
-assert(Math.abs(hi.marks[0][1]-34.336845)<.00001&&Math.abs(hi.marks[0][2]-132.294527)<.00001,'Hiroshima-Iwakuni 0 KP is at Hatsukaichi JCT');
-assert(Math.abs(hi.marks.at(-1)[1]-34.3451588)<.00001&&Math.abs(hi.marks.at(-1)[2]-132.3131984)<.00001,'KP increases toward Hatsukaichi IC, not toward the JCT');
+assert.equal(hi.marks.length,16,'Only calibrated 0–1.5 KP labels are generated, not operating-distance 2.5km');
+assert(Math.abs(hi.marks[0][1]-34.3388148)<.00001&&Math.abs(hi.marks[0][2]-132.2984286)<.00001,'Hiroshima-Iwakuni 0 KP is at Hatsukaichi JCT');
+assert(Math.abs(hi.marks.at(-1)[1]-34.3451588)<.00001&&Math.abs(hi.marks.at(-1)[2]-132.3131984)<.00001,'1.5 KP is at the toll plaza, not several hundred metres away');
+assert.equal(hi.marks.at(-1)[0],1.5,'Toll plaza is the 1.5 KP reference');
+assert.equal(hi.kpCalibration.method,'reference-point-interpolation','Intermediate KP coordinates are explicitly estimates');
+assert(!hi.marks.some(m=>m[0]>1.5),'Unverified distance-derived KP beyond the plaza is removed');
 assert(hi.marks.every((mark,i)=>mark[0]===Number((i/10).toFixed(1))),'KP input remains sorted at 0.1km spacing');
 assert(Math.abs(hi.segs[0][0][0]-34.3451588)<.0001&&Math.abs(hi.segs[0][0][1]-132.3131984)<.0001,'Route starts at Hatsukaichi IC');
 assert(Math.abs(hi.segs[0].at(-1)[0]-34.336845)<.0001&&Math.abs(hi.segs[0].at(-1)[1]-132.294527)<.0001,'Route ends at Hatsukaichi JCT');
