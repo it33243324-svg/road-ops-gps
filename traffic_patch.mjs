@@ -129,7 +129,7 @@ html=html.replace('<script src="/traffic-client.js">','<script src="/traffic-new
 html=html.replace('</body>','<script src="/map-details.js"></script><script src="/next-facilities.js"></script><script src="/distance-rings.js"></script></body>');
 html=html.replace('</style>', '.distance-ring-tag{font:600 10px/16px system-ui;color:#52778e;text-align:center;text-shadow:0 0 3px white,0 0 3px white;pointer-events:none}.detail-label{position:absolute;transform:translate(-50%,8px);white-space:nowrap;background:#ffffffdc;color:#64717d;border:1px solid #d4dce2;border-radius:4px;padding:2px 4px;font:600 12px/1.2 system-ui;box-shadow:0 1px 3px #24435a15;pointer-events:none}.next-facilities{margin-left:auto;display:flex;align-items:center;flex-wrap:wrap;gap:7px;padding:8px 10px;border:1px solid #d8e2eb;border-radius:9px;background:#fff;color:#536b7d;font-size:11px;max-width:520px}.next-facilities strong{color:#28465c;font-size:12px}.next-facility-item{padding:4px 7px;background:#f4f8fb;border-radius:5px;color:#2b4e66;font-weight:750}.traffic-new{display:inline-block;vertical-align:middle;margin-right:5px;padding:2px 5px;border-radius:4px;background:#e53e4b;color:#fff;font:bold 10px/1.2 system-ui}.traffic-map-new{position:absolute;left:50%;top:-20px;transform:translateX(-50%);padding:2px 4px;border-radius:4px;background:#e53e4b;color:#fff;font:bold 9px/1 system-ui;pointer-events:none;box-shadow:0 1px 3px #a12a3544}@media(max-width:600px){.next-facilities{width:100%;max-width:none;margin-left:0;box-sizing:border-box}}'+'</style>');
 fs.writeFileSync(file,html);
-for(const script of ['traffic-new.js','map-details.js','next-facilities.js','distance-rings.js'])fs.copyFileSync(script,'dist/'+script);
+for(const script of ['traffic-new.js','map-details.js','next-facilities.js','distance-rings.js','road-label-overlap.js'])fs.copyFileSync(script,'dist/'+script);
 
 fs.copyFileSync('map-feature-preview.html','dist/map-feature-preview.html');
 
@@ -188,4 +188,8 @@ fs.copyFileSync('ui-preview.html','dist/ui-preview.html');
 // Progressively shrink labels in wide views without changing their geographic anchors.
 html=fs.readFileSync(file,'utf8');
 html=html.replace('</style>', '#m .facility{transform:translate(-7px,-7px) scale(var(--kpmap-label-scale,1));transform-origin:7px 7px}#m .kpmark.up .kplabel,#m .kpmark.down .kplabel{transform:translate(-50%,-50%) scale(var(--kpmap-label-scale,1))}#m .kpmark.up .kplabel.picked,#m .kpmark.down .kplabel.picked{transform:translate(-50%,-50%) scale(calc(var(--kpmap-label-scale,1) * 1.18))}'+'</style>');
+fs.writeFileSync(file,html);
+
+// Draw covered road fragments above labels at 70% transparency.
+html=fs.readFileSync(file,'utf8').replace('</body>', '<script src="/road-label-overlap.js"></script></body>');
 fs.writeFileSync(file,html);
