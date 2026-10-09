@@ -1,6 +1,7 @@
 import fs from 'fs';
 const p='build.mjs';
 let s=fs.readFileSync(p,'utf8');
+s=s.replace("import fs from 'fs';", "import fs from 'fs';\nimport {calibrateKp} from './kp-calibration.mjs';");
 // Keep the IC access road out of China's mainline interpolation. The source
 // assigns both the JCT and the off-mainline IC the same 288.6 KP.
 const mainlineAnchor='const DATA={};';
@@ -39,6 +40,8 @@ if(!s.includes(old)) throw new Error('target patch block not found');s=s.replace
 const dataAnchor="if(!DATA.chugoku||DATA.chugoku.marks.length<2)throw Error('中国道KP固定データの生成に失敗しました');";
 const keep=`DATA.chugoku.color='#ec5bb4';
 if(miyoshiMainlineCorrected)DATA.chugoku.kpCorrections=[{start:288.6,end:293.6,method:'mainline-reference-interpolation',note:'三次東IC接続道路を除き、三次東JCT〜三次ICの本線に沿って補間'}];
+const ledgerCalibration=calibrateKp(DATA,JSON.parse(fs.readFileSync(new URL('./kp-ledger-anchors.json',import.meta.url),'utf8')));
+fs.mkdirSync('dist',{recursive:true});fs.writeFileSync('dist/kp-calibration-report.json',JSON.stringify(ledgerCalibration,null,2));
 const KEEP=new Set(Object.keys(DATA));
 `;
 if(!s.includes(dataAnchor)) throw new Error('DATA filter anchor not found');s=s.replace(dataAnchor,keep+dataAnchor);

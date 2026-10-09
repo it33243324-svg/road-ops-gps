@@ -1,0 +1,285 @@
+{
+  "version": 1,
+  "geometrySnapshot": "2026-10-08",
+  "method": "ledger-stationing-on-existing-mainline",
+  "note": "公式図面の上り線の橋端KPをOSM上り橋端で照合し、既存共通道路線へ投影。橋の間・区間端は本線に沿った参考補間であり実測KP座標ではない。上下線別KP配列ではない。",
+  "regions": [
+    {
+      "road": "sanyo",
+      "start": 315,
+      "end": 332.6,
+      "anchors": [
+        {
+          "kp": 324.133,
+          "point": [
+            34.2372311,
+            132.2140449
+          ],
+          "name": "御園高架橋 起点",
+          "osmWays": [
+            304764245,
+            513225855
+          ],
+          "source": "https://www.mlit.go.jp/road/kousoku_dourodaityou/pdf/rinku53.pdf",
+          "pages": [
+            9
+          ],
+          "carriageway": "up",
+          "expectedOriginalKp": 324.7112
+        },
+        {
+          "kp": 324.381,
+          "point": [
+            34.2350522,
+            132.2134094
+          ],
+          "name": "御園高架橋 終点",
+          "osmWays": [
+            304764245,
+            513225855
+          ],
+          "source": "https://www.mlit.go.jp/road/kousoku_dourodaityou/pdf/rinku53.pdf",
+          "pages": [
+            9
+          ],
+          "carriageway": "up",
+          "expectedOriginalKp": 324.9426
+        }
+      ]
+    },
+    {
+      "road": "sanyo",
+      "start": 252.6,
+      "end": 257.8,
+      "anchors": [
+        {
+          "kp": 256.289,
+          "point": [
+            34.4389378,
+            132.7701232
+          ],
+          "name": "桧山高架橋 起点",
+          "osmWays": [
+            92018014
+          ],
+          "source": "https://www.mlit.go.jp/road/kousoku_dourodaityou/pdf/rinku51.pdf",
+          "pages": [
+            80,
+            81
+          ],
+          "carriageway": "up",
+          "expectedOriginalKp": 256.1986
+        },
+        {
+          "kp": 257.052,
+          "point": [
+            34.4404416,
+            132.7621329
+          ],
+          "name": "桧山高架橋 終点",
+          "osmWays": [
+            92018014
+          ],
+          "source": "https://www.mlit.go.jp/road/kousoku_dourodaityou/pdf/rinku51.pdf",
+          "pages": [
+            80,
+            81
+          ],
+          "carriageway": "up",
+          "expectedOriginalKp": 257.008
+        }
+      ]
+    },
+    {
+      "road": "sanyo",
+      "start": 401.3,
+      "end": 407.2,
+      "anchors": [
+        {
+          "kp": 404.1,
+          "point": [
+            34.0587548,
+            131.5420297
+          ],
+          "name": "漆橋 起点",
+          "osmWays": [
+            552124707
+          ],
+          "source": "https://www.mlit.go.jp/road/kousoku_dourodaityou/pdf/rinku54.pdf",
+          "pages": [
+            60
+          ],
+          "carriageway": "up",
+          "expectedOriginalKp": 404.2438
+        },
+        {
+          "kp": 404.121,
+          "point": [
+            34.0586284,
+            131.5418625
+          ],
+          "name": "漆橋 終点",
+          "osmWays": [
+            552124707
+          ],
+          "source": "https://www.mlit.go.jp/road/kousoku_dourodaityou/pdf/rinku54.pdf",
+          "pages": [
+            60
+          ],
+          "carriageway": "up",
+          "expectedOriginalKp": 404.2681
+        },
+        {
+          "kp": 404.286,
+          "point": [
+            34.0576612,
+            131.5405173
+          ],
+          "name": "漆高架橋 起点",
+          "osmWays": [
+            430620036
+          ],
+          "source": "https://www.mlit.go.jp/road/kousoku_dourodaityou/pdf/rinku54.pdf",
+          "pages": [
+            60
+          ],
+          "carriageway": "up",
+          "expectedOriginalKp": 404.4594
+        },
+        {
+          "kp": 404.395,
+          "point": [
+            34.057072,
+            131.5395675
+          ],
+          "name": "漆高架橋 終点",
+          "osmWays": [
+            430620036
+          ],
+          "source": "https://www.mlit.go.jp/road/kousoku_dourodaityou/pdf/rinku54.pdf",
+          "pages": [
+            60
+          ],
+          "carriageway": "up",
+          "expectedOriginalKp": 404.5877
+        },
+        {
+          "kp": 405.116,
+          "point": [
+            34.0543326,
+            131.5325366
+          ],
+          "name": "居合橋 起点",
+          "osmWays": [
+            552124716
+          ],
+          "source": "https://www.mlit.go.jp/road/kousoku_dourodaityou/pdf/rinku54.pdf",
+          "pages": [
+            61
+          ],
+          "carriageway": "up",
+          "expectedOriginalKp": 405.2246
+        },
+        {
+          "kp": 405.145,
+          "point": [
+            34.0542473,
+            131.5322396
+          ],
+          "name": "居合橋 終点",
+          "osmWays": [
+            552124716
+          ],
+          "source": "https://www.mlit.go.jp/road/kousoku_dourodaityou/pdf/rinku54.pdf",
+          "pages": [
+            61
+          ],
+          "carriageway": "up",
+          "expectedOriginalKp": 405.25
+        }
+      ]
+    },
+    {
+      "road": "chugoku",
+      "start": 353,
+      "end": 360.4,
+      "anchors": [
+        {
+          "kp": 355.614,
+          "point": [
+            34.5774136,
+            132.3257418
+          ],
+          "name": "中国太田川橋 起点",
+          "osmWays": [
+            304504597
+          ],
+          "source": "https://www.mlit.go.jp/road/kousoku_dourodaityou/pdf/rinku45.pdf",
+          "pages": [
+            262
+          ],
+          "carriageway": "up",
+          "expectedOriginalKp": 355.3024
+        },
+        {
+          "kp": 356.08,
+          "point": [
+            34.5782348,
+            132.3207565
+          ],
+          "name": "中国太田川橋 終点",
+          "osmWays": [
+            304504597
+          ],
+          "source": "https://www.mlit.go.jp/road/kousoku_dourodaityou/pdf/rinku45.pdf",
+          "pages": [
+            262
+          ],
+          "carriageway": "up",
+          "expectedOriginalKp": 355.7984
+        }
+      ]
+    },
+    {
+      "road": "chugoku",
+      "start": 376.6,
+      "end": 380.4,
+      "anchors": [
+        {
+          "kp": 378.64,
+          "point": [
+            34.4772942,
+            132.1347439
+          ],
+          "name": "宇ノ子橋 起点",
+          "osmWays": [
+            1113208434
+          ],
+          "source": "https://www.mlit.go.jp/road/kousoku_dourodaityou/pdf/rinku46.pdf",
+          "pages": [
+            4
+          ],
+          "carriageway": "up",
+          "expectedOriginalKp": 378.7233
+        },
+        {
+          "kp": 378.854,
+          "point": [
+            34.4772175,
+            132.1324219
+          ],
+          "name": "宇ノ子橋 終点",
+          "osmWays": [
+            1113208434
+          ],
+          "source": "https://www.mlit.go.jp/road/kousoku_dourodaityou/pdf/rinku46.pdf",
+          "pages": [
+            4
+          ],
+          "carriageway": "up",
+          "expectedOriginalKp": 378.9521
+        }
+      ]
+    }
+  ]
+}
