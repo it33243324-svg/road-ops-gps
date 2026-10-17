@@ -193,10 +193,26 @@
         '</div><small>施設の位置を確認中です</small></article>').join('') + '</details>';
   }
 
+  let listHtmlCache = null, listEvents = [];
+  function updateListHtml(html) {
+    if (html === listHtmlCache) return;
+    list.innerHTML = html;
+    listHtmlCache = html;
+  }
+  list.addEventListener('click', event => {
+    const card = event.target.closest('[data-event]');
+    if (!card || !list.contains(card)) return;
+    const item = listEvents[Number(card.dataset.event)];
+    if (!item) return;
+    window.dispatchEvent(new CustomEvent('kpmap-browse-map'));
+    map.setView(item.mapPoint, Math.max(map.getZoom(), 14));
+    if (item.mapMarker) item.mapMarker.openPopup();
+  });
   function renderList() {
     if (!userLocation) {
       count.textContent = '現在地待ち';
-      list.innerHTML = '<div class="traffic-empty">周辺の詳細を見るには、地図の「現在地」ボタンを押してね📍 地図には位置を確認できた情報を表示中だよ。</div>' + unresolvedHtml();
+      listEvents = [];
+      updateListHtml('<div class="traffic-empty">周辺の詳細を見るには、地図の「現在地」ボタンを押してね📍 地図には位置を確認できた情報を表示中だよ。</div>' + unresolvedHtml());
       return;
     }
     const radius = Number(radiusSelect.value) || 20;
@@ -214,17 +230,12 @@
     const groupHtml = (title, entries, css) => entries.length ?
       '<section class="traffic-group ' + css + '"><h3>' + title + '<small>' + entries.length + '件・近い順</small></h3><div class="traffic-group-cards">' +
       entries.map(item => card(item, index++)).join('') + '</div></section>' : '';
-    list.innerHTML = groups.count ?
+    listEvents = ordered;
+    const nextHtml = groups.count ?
       groupHtml('通行止め・事故・故障車・落下物・その他', groups.priority, 'traffic-priority-group') +
       groupHtml('工事・交通規制', groups.regulation, 'traffic-regulation-group') :
       '<div class="traffic-empty">現在地から' + radius + 'km以内に交通情報はありません。</div>';
-    list.innerHTML += unresolvedHtml();
-    list.querySelectorAll('[data-event]').forEach(cardEl => cardEl.addEventListener('click', () => {
-      const event = ordered[Number(cardEl.dataset.event)].event;
-      window.dispatchEvent(new CustomEvent('kpmap-browse-map'));
-      map.setView(event.mapPoint, Math.max(map.getZoom(), 14));
-      if (event.mapMarker) event.mapMarker.openPopup();
-    }));
+    updateListHtml(nextHtml + unresolvedHtml());
   }
 
   function ageHtml(event) {

@@ -1,14 +1,19 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const locate = require('../traffic-location.js');
-const catalogue = require('../traffic-landmarks.json');
+const vm = require('node:vm');
+const runtime = {window:{}};
+vm.runInNewContext(fs.readFileSync('dist/traffic-landmarks.js','utf8'),runtime);
+const catalogue = JSON.parse(JSON.stringify(runtime.window.KPMAP_TRAFFIC_LANDMARKS));
 const html = fs.readFileSync(process.argv[2] || 'dist/index.html', 'utf8');
 const routes = JSON.parse(html.match(/const D=(.*?),\$=x=>/s)[1]);
 const byName = {'山陽道':'sanyo','中国道':'chugoku','岡山道':'okayama','米子道':'yonago','広島道':'hiroshima','広島呉道路':'hiroshima_kure','山陰道':'sanin'};
 const events = JSON.parse(fs.readFileSync(__dirname + '/fixtures/traffic-2026-10-03.json')).events;
 locate.resolveEvents(events, routes, catalogue, byName);
 assert.equal(events.length, 42);
-assert.equal(events.filter(e => e.mapPoint).length, 42, 'All real events must remain available');
+const supported = events.filter(e => routes[byName[e.road]]);
+assert.equal(events.filter(e => e.mapPoint).length, supported.length, 'Every real event on a supported road must remain available');
+for(const event of events.filter(e=>!routes[byName[e.road]]))assert.equal(event.mapPoint,undefined,'Unsupported roads must not inherit a supported road coordinate');
 const numata = events.find(e => e.title.includes('沼田'));
 for (const e of events.filter(e => /塩納|龍王山/.test(e.title))) {
   assert(e.mapPoint[1] > 134 && e.mapPoint[0] > 34.7, 'Okayama tunnels must not be at Numata');
