@@ -23,6 +23,7 @@ async function main(){
       const increasing=phase<app.span;
       const heading=(Math.atan2((b[2]-a[2])*Math.cos(p[0]*Math.PI/180),b[1]-a[1])*180/Math.PI+(increasing?360:540))%360;
       app.gps(p,heading);
+      if(process.env.KPMAP_SOAK_ROTATE==='1'&&tick%15===10)app.map.setBearing((tick*3)%360);
       assert(Number.isFinite(w.KPMAPLocation.getLatest()?.point?.[0]));
       if(tick>0&&tick%180===60){
         app.gpsError({code:3});assert(app.watchActive,'Transient GPS timeout must keep the registered watch');

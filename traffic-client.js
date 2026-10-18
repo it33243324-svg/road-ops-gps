@@ -14,6 +14,7 @@
   let badgeSignature = null;
   let mapFrame = 0;
   let zoomHooked = false;
+  let renderedGroups = null, renderedScale = null, renderedBadges = null;
   let lastSuccessfulFetch = 0;
   let savedNew=null;try{savedNew=JSON.parse(sessionStorage.getItem('kpmap-traffic-new')||'null');}catch{}
   const newTracker=KPMAPTrafficNew.create(savedNew);
@@ -120,6 +121,18 @@
     return true;
   }
   function renderMap() {
+    const scale = map.getZoom() < 13 ? .75 : map.getZoom() < 15 ? .875 : 1;
+    const size = Math.round(32 * scale);
+    const groups = KPMAPTrafficPresentation.screenGroups(trafficData,
+      point => map.latLngToContainerPoint(point), size + 12);
+    const badges = trafficData.map(event => newTracker.isNew(event)).join();
+    // Leaflet already moves existing geographic markers on pan/zoom/rotation.
+    // Recreate icons only when grouping, scale, event objects or NEW badges
+    // actually change; keep live popup/focus state during heading animation.
+    if (renderedScale === scale && renderedBadges === badges && renderedGroups &&
+        groups.length === renderedGroups.length && groups.every((group, i) =>
+          group.length === renderedGroups[i].length && group.every((event,j) => event === renderedGroups[i][j]))) return;
+    renderedGroups = groups; renderedScale = scale; renderedBadges = badges;
     const popupEvent = trafficData.find(event => event.mapMarker?.isPopupOpen?.());
     const uprightPane = map.getPane('markerPane').parentElement;
     const kpPane = map.getPane('kpPane');
@@ -139,12 +152,8 @@
       map.on('zoomend rotate', scheduleMap);
       zoomHooked = true;
     }
-    const scale = map.getZoom() < 13 ? .75 : map.getZoom() < 15 ? .875 : 1;
-    const size = Math.round(32 * scale);
     // Group nearby screen anchors; zooming in naturally separates distinct locations.
     for (const event of trafficData) event.mapMarker = null;
-    const groups = KPMAPTrafficPresentation.screenGroups(trafficData,
-      point => map.latLngToContainerPoint(point), size + 12);
     for (const events of groups) {
       const event = events[0];
       const rank = mapRank(event), pane = 'trafficPriority' + rank;
@@ -189,6 +198,7 @@
   }
 
   let listHtmlCache = null, listEvents = [];
+  let listLayout = null;
   function updateListHtml(html) {
     if (html === listHtmlCache) return;
     list.innerHTML = html;
@@ -207,12 +217,35 @@
     if (!userLocation) {
       count.textContent = '現在地待ち';
       listEvents = [];
+      listLayout = null;
       updateListHtml('<div class="traffic-empty">周辺の詳細を見るには、地図の「現在地」ボタンを押してね📍 地図には位置を確認できた情報を表示中だよ。</div>' + unresolvedHtml());
       return;
     }
     const radius = Number(radiusSelect.value) || 20;
     const groups = nearbyGroups(trafficData, userLocation, radius);
-    count.textContent = groups.count + '件（' + radius + 'km以内）';
+    const countText = groups.count + '件（' + radius + 'km以内）';
+    if (count.textContent !== countText) count.textContent = countText;
+    const ordered = [...groups.priority, ...groups.regulation];
+    const badgeKey = ordered.map(item => newTracker.isNew(item.event)).join();
+    const ageKey = ordered.map(item => !!eventAge(item.event.occurredAt)).join();
+    // A moving GPS fix usually changes only the rounded distances. Reuse the
+    // buttons so focus, open details and delegated event references survive.
+    const sameLayout = listLayout && listLayout.source === trafficData && listLayout.radius === radius &&
+      listLayout.priorityCount === groups.priority.length && listLayout.badgeKey === badgeKey &&
+      listLayout.ageKey === ageKey &&
+      ordered.length === listEvents.length && ordered.every((item, i) => item.event === listEvents[i].event);
+    if (sameLayout) {
+      listEvents = ordered;
+      let changed = false;
+      ordered.forEach((item, i) => {
+        const distance = '約' + item.distance.toFixed(1) + 'km', node = listLayout.distances[i];
+        if (node && node.textContent !== distance) { node.textContent = distance; changed = true; }
+        const age = listLayout.ages[i], text = eventAge(item.event.occurredAt);
+        if (age && age.textContent !== text) { age.textContent = text; changed = true; }
+      });
+      if (changed) listHtmlCache = null;
+      return;
+    }
     const card = ({ event, distance }, index) =>
       '<button type="button" class="traffic-card" data-event="' + index + '" style="border-left-color:' + colorFor(event.category) + '">' +
       '<span class="traffic-loc">' + newHtml(event) + escapeHtml(event.road) + '　' + escapeHtml(event.title) + '</span>' +
@@ -220,7 +253,6 @@
       [event.categoryLabel, directionLabel(event.direction), event.reason, event.detail].filter(Boolean)
         .map(tag => '<span class="traffic-tag">' + escapeHtml(tag) + '</span>').join('') +
       '<span class="traffic-distance">約' + distance.toFixed(1) + 'km</span></span>' + ageHtml(event) + '</button>';
-    const ordered = [...groups.priority, ...groups.regulation];
     let index = 0;
     const groupHtml = (title, entries, css) => entries.length ?
       '<section class="traffic-group ' + css + '"><h3>' + title + '<small>' + entries.length + '件・近い順</small></h3><div class="traffic-group-cards">' +
@@ -231,6 +263,9 @@
       groupHtml('工事・交通規制', groups.regulation, 'traffic-regulation-group') :
       '<div class="traffic-empty">現在地から' + radius + 'km以内に交通情報はありません。</div>';
     updateListHtml(nextHtml + unresolvedHtml());
+    listLayout = { source: trafficData, radius, priorityCount: groups.priority.length, badgeKey, ageKey,
+      distances: Array.from(list.querySelectorAll('[data-event] .traffic-distance')),
+      ages: Array.from(list.querySelectorAll('[data-event]')).map(card => card.querySelector('.traffic-age')) };
   }
 
   function ageHtml(event) {
@@ -247,7 +282,7 @@
   }
 
   async function load() {
-    if (busy) return;
+    if (busy) return false;
     busy = true;
     refresh.disabled = true;
     refresh.textContent = '取得中…';
@@ -274,10 +309,12 @@
       } else if (refreshBadges()) renderMap();
       updateMapMeta();
       renderList();
+      return true;
     } catch (error) {
       console.error('KPMAP traffic', error);
       meta.textContent = '更新に失敗しました。前回取得した情報を表示しています。';
       if (updated) updated.classList.add('is-stale');
+      return false;
     } finally {
       clearTimeout(timeout);
       busy = false;
@@ -293,13 +330,22 @@
   radiusSelect.addEventListener('change', renderList);
   refresh.addEventListener('click', load);
   load();
-  setInterval(() => { if (!document.hidden) load(); }, 60000);
+  setInterval(async () => {
+    if (document.hidden) return;
+    const loaded = await load();
+    // Successful loads already update badges and the list. A failed or busy
+    // load still needs local badge expiry, distance and occurrence-age upkeep.
+    if (!loaded && trafficData.length) {
+      if (refreshBadges()) renderMap();
+      renderList();
+    }
+    document.querySelectorAll('.traffic-age[data-occurred-at]').forEach(el => {
+      const text = eventAge(el.dataset.occurredAt);
+      if (el.textContent !== text) el.textContent = text;
+    });
+  }, 60000);
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden && Date.now() - lastSuccessfulFetch >= 30000) load();
   });
   window.addEventListener('online', load);
-  setInterval(()=>{if(!document.hidden&&trafficData.length){if(refreshBadges())renderMap();renderList();}},60000);
-  setInterval(() => document.querySelectorAll('.traffic-age[data-occurred-at]').forEach(el => {
-    el.textContent = eventAge(el.dataset.occurredAt);
-  }), 60000);
 })();

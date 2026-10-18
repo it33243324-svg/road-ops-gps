@@ -1,7 +1,7 @@
 {
   "scripts": {
     "build": "node prepatch.mjs && node facilities_patch.mjs && node build.mjs && node traffic_patch.mjs && node optimize-assets.mjs",
-    "test": "node tests/mobile-rendering.test.cjs && node tests/traffic-interaction.test.cjs && node tests/recovery.test.cjs && node tests/traffic-api.test.cjs && node tests/asset-cache.test.cjs && node tests/spatial.test.cjs && node tests/lightweight.test.cjs && node tests/kp-calibration.test.mjs && node tests/traffic-new.test.cjs && node tests/next-facilities.test.cjs && node tests/traffic-presentation.test.cjs && node tests/location-quality.test.cjs && node tests/traffic-location.test.cjs dist/index.html && node tests/map-ui.test.cjs && node tests/map-performance.test.cjs && node tests/road-label-overlap.test.cjs"
+    "test": "node tests/detail-reuse.test.cjs && node tests/detail-collision.test.cjs && node tests/traffic-marker-reuse.test.cjs && node tests/traffic-list-reuse.test.cjs && node tests/mobile-rendering.test.cjs && node tests/traffic-interaction.test.cjs && node tests/recovery.test.cjs && node tests/traffic-api.test.cjs && node tests/asset-cache.test.cjs && node tests/spatial.test.cjs && node tests/lightweight.test.cjs && node tests/kp-calibration.test.mjs && node tests/traffic-new.test.cjs && node tests/next-facilities.test.cjs && node tests/traffic-presentation.test.cjs && node tests/location-quality.test.cjs && node tests/traffic-location.test.cjs dist/index.html && node tests/map-ui.test.cjs && node tests/map-performance.test.cjs && node tests/road-label-overlap.test.cjs"
   },
   "devDependencies": {
     "jsdom": "26.1.0",

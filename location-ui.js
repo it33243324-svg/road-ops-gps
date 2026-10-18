@@ -119,9 +119,10 @@
     }}));
     loc.disabled = false;
     loc.textContent = '現在地';
-    msg.textContent = '現在地を表示しました（精度 約' + Math.round(accuracy || 0) + 'm' +
-      (directionStatus === 'judging' ? '・進行方向は判定中' : finite(lastMotionHeading) ? '・車両走行時の方向を保持' : '・進行方向は取得できません') + '）';
-    labels();
+    // labels() used to immediately overwrite the GPS message with the KP
+    // summary. Retain that summary without rebuilding all labels on each fix.
+    if (msg.textContent !== kpSummary) msg.textContent = kpSummary;
+    scheduleVisibleLabels();
   }
 
   function onError(error) {
