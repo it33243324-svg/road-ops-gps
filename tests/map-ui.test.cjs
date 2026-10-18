@@ -27,12 +27,7 @@ const dom=new JSDOM(fs.readFileSync(path.join(dist,'index.html'),'utf8'),{url:'h
 }});
 const w=dom.window,wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 const builtHtml=fs.readFileSync(path.join(dist,'index.html'),'utf8');
-const dataStart=builtHtml.indexOf('const D=')+8;
-assert(dataStart>=8,'Built route data is embedded in the map page');
-let depth=0,inString=false,escaped=false,dataEnd=-1;
-for(let i=dataStart;i<builtHtml.length;i++){const c=builtHtml[i];if(inString){if(escaped)escaped=false;else if(c.charCodeAt(0)===92)escaped=true;else if(c==='"')inString=false;}else if(c==='"')inString=true;else if(c==='{')depth++;else if(c==='}'&&--depth===0){dataEnd=i+1;break;}}
-assert(dataEnd>dataStart,'Built route data is valid JSON');
-const routeData=JSON.parse(builtHtml.slice(dataStart,dataEnd)),hi=routeData.hiroshima_iwakuni;
+const routeData=require('./read-route-data.cjs')(path.join(dist,'index.html')),hi=routeData.hiroshima_iwakuni;
 assert.equal(hi.quality,'osm-road-aligned');
 assert.equal(hi.marks.length,16,'Only calibrated 0–1.5 KP labels are generated, not operating-distance 2.5km');
 assert(Math.abs(hi.marks[0][1]-34.3388148)<.00001&&Math.abs(hi.marks[0][2]-132.2984286)<.00001,'Hiroshima-Iwakuni 0 KP is at Hatsukaichi JCT');

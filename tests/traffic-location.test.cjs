@@ -6,7 +6,7 @@ const runtime = {window:{}};
 vm.runInNewContext(fs.readFileSync('dist/traffic-landmarks.js','utf8'),runtime);
 const catalogue = JSON.parse(JSON.stringify(runtime.window.KPMAP_TRAFFIC_LANDMARKS));
 const html = fs.readFileSync(process.argv[2] || 'dist/index.html', 'utf8');
-const routes = JSON.parse(html.match(/const D=(.*?),\$=x=>/s)[1]);
+const routes = require('./read-route-data.cjs')(process.argv[2] || 'dist/index.html');
 const byName = {'山陽道':'sanyo','中国道':'chugoku','岡山道':'okayama','米子道':'yonago','広島道':'hiroshima','広島呉道路':'hiroshima_kure','山陰道':'sanin'};
 const events = JSON.parse(fs.readFileSync(__dirname + '/fixtures/traffic-2026-10-03.json')).events;
 locate.resolveEvents(events, routes, catalogue, byName);

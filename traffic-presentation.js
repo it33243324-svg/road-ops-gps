@@ -21,10 +21,21 @@
     return isRegulation(e) ? 5 : 4;
   }
   function nearbyGroups(events, location, radius) {
-    const near = events.filter(e => e.mapPoint && distanceKm(location, e.mapPoint) <= radius)
+    const near = events.filter(e => e.mapPoint)
       .map(e => ({ event: e, distance: distanceKm(location, e.mapPoint) }))
+      .filter(item => item.distance <= radius)
       .sort((a, b) => a.distance - b.distance);
     return { priority: near.filter(x => !isRegulation(x.event)), regulation: near.filter(x => isRegulation(x.event)), count: near.length };
+  }
+  function screenGroups(events, project, gap) {
+    const groups = [], anchors = [];
+    for (const event of events.filter(e => e.mapPoint).sort((a, b) => mapRank(a) - mapRank(b))) {
+      const point = project(event.mapPoint);
+      const index = anchors.findIndex(anchor => Math.abs(anchor.x - point.x) < gap && Math.abs(anchor.y - point.y) < gap);
+      if (index >= 0) groups[index].push(event);
+      else { groups.push([event]); anchors.push(point); }
+    }
+    return groups;
   }
   function eventAge(timestamp, now = Date.now()) {
     // Only actual, absolute occurrence timestamps qualify. Fetch/first-seen time is never used.
@@ -34,7 +45,7 @@
     const minutes = Math.max(0, Math.floor((now - time) / 60000));
     return minutes < 1 ? '発生から1分未満' : '発生から' + minutes + '分';
   }
-  const api = { distanceKm, isRegulation, isClosure, mapRank, nearbyGroups, eventAge };
+  const api = { distanceKm, isRegulation, isClosure, mapRank, nearbyGroups, screenGroups, eventAge };
   root.KPMAPTrafficPresentation = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);

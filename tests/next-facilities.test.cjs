@@ -9,3 +9,12 @@ assert(next(route,5,'下り').every(x=>x.distance>0));
 const combined={...route,facilities:[{name:'共用PA/SIC',type:'SIC',lat:34,lng:132.06},...route.facilities]};
 const result=next(combined,5,'下り');assert.equal(result[0].facility.name,'共用PA/SIC');assert.deepEqual(result[0].kinds,['IC','PA・SA'],'Combined smart IC/service facilities fulfill both roles without duplicate cards');
 console.log('PASS: projected KP distance, both directions, next IC/service selection and no guess before direction confirmation');
+
+assert.deepEqual(next(undefined,5,'下り'),[]);
+assert.deepEqual(next(route,NaN,'下り'),[]);
+const replaced={...route,marks:route.marks.slice(),facilities:route.facilities.slice()};
+assert.equal(next(replaced,5,'下り')[0].facility.name,'東IC');
+replaced.facilities=[{name:'更新IC',type:'IC',lat:34,lng:132.07}];
+assert.equal(next(replaced,5,'下り')[0].facility.name,'更新IC','Replacing facilities invalidates cached projections');
+replaced.marks=replaced.marks.map(m=>[m[0]+1,m[1],m[2]]);
+assert(Math.abs(next(replaced,5,'下り')[0].distance-3)<1e-8,'Replacing KP data invalidates cached projections');

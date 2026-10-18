@@ -11,6 +11,7 @@
   let locationMarker = null;
   let accuracyCircle = null;
   let requestedRecenter = false;
+  let watchHadError = false, watchStartedAt = 0;
 
   const MIN_VEHICLE_SPEED = 40 / 3.6;
   const MIN_TRACK_SPEED = MIN_VEHICLE_SPEED;
@@ -31,6 +32,7 @@
   function showPosition(incoming) {
     const position = KPMAPLocationQuality.chooseFix(incoming, previousSample);
     if (!position) return;
+    watchHadError = false;
     const { latitude, longitude, accuracy, heading, speed } = position.coords;
     const point = [latitude, longitude];
     let vehicleCandidate = false;
@@ -88,18 +90,23 @@
       map.getPane('markerPane').parentElement.appendChild(map.getPane('locationPane'));
     }
     const arrow = finite(lastMotionHeading) ? lastMotionHeading : 0;
+    if (!locationMarker) {
     const icon = L.divIcon({
       className: '', iconSize: [52, 52], iconAnchor: [26, 26],
       html: '<div style="width:52px;height:52px;position:relative;"><span class="location-wave"></span><span class="location-wave second"></span></div><div class="location-direction-arrow" style="width:52px;height:52px;position:absolute;left:0;top:0;filter:drop-shadow(0 2px 4px #00101888);transform:rotate(' + arrow + 'deg)"><div style="position:absolute;left:20px;top:0;width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-bottom:20px solid #ff304f"></div><div style="position:absolute;left:10px;top:10px;width:32px;height:32px;box-sizing:border-box;border-radius:50%;background:#ff304f;border:4px solid white;box-shadow:0 0 0 2px #ff304f55"></div></div>'
     });
-    if (!locationMarker) locationMarker = L.marker(point, { icon, pane: 'locationPane', zIndexOffset: 10000, rotateWithView: true, interactive: false }).addTo(here);
-    else {
-      locationMarker.setLatLng(point);
+    locationMarker = L.marker(point, { icon, pane: 'locationPane', zIndexOffset: 10000, rotateWithView: true, interactive: false }).addTo(here);
+    } else {
+      if (!locationMarker.getLatLng().equals(point)) locationMarker.setLatLng(point);
       const arrowElement = locationMarker.getElement()?.querySelector('.location-direction-arrow');
-      if (arrowElement) arrowElement.style.transform = 'rotate(' + arrow + 'deg)';
+      const rotation = 'rotate(' + arrow + 'deg)';
+      if (arrowElement && arrowElement.style.transform !== rotation) arrowElement.style.transform = rotation;
     }
     if (!accuracyCircle) accuracyCircle = L.circle(point, { radius: accuracy, color: '#ff304f', weight: 1, fillColor: '#ff304f', fillOpacity: .06, interactive: false }).addTo(here);
-    else accuracyCircle.setLatLng(point).setRadius(accuracy);
+    else {
+      if (!accuracyCircle.getLatLng().equals(point)) accuracyCircle.setLatLng(point);
+      if (accuracyCircle.getRadius() !== accuracy) accuracyCircle.setRadius(accuracy);
+    }
 
     if (requestedRecenter) map.stop().panTo(point, { animate: true, duration: .9, easeLinearity: .25 });
     else if (firstFix) setDefaultView(point);
@@ -120,8 +127,13 @@
   function onError(error) {
     vehicleSince = null; directionStatus = 'unavailable';
     previousSample = null;
-    if (watchId !== null) navigator.geolocation?.clearWatch(watchId);
-    watchId = null;
+    watchHadError = true;
+    // TIMEOUT/POSITION_UNAVAILABLE do not cancel a browser watch. Keep it so
+    // the next successful fix can recover without requiring another tap.
+    if (error.code === 1) {
+      if (watchId !== null) navigator.geolocation?.clearWatch(watchId);
+      watchId = null;
+    }
     requestedRecenter = false;
     loc.disabled = false;
     loc.textContent = '現在地';
@@ -142,7 +154,7 @@
     }
     // A watch can remain registered even after GPS stops delivering fixes.
     // Explicit recenter must restart a stale watch instead of silently waiting.
-    if (recenter && (!latest || Date.now() - latest.timestamp > 30000) && watchId !== null) {
+    if (recenter && (watchHadError || !latest || Date.now() - latest.timestamp > 30000) && watchId !== null) {
       navigator.geolocation.clearWatch(watchId);
       watchId = null;
     }
@@ -150,6 +162,8 @@
     if (recenter) msg.textContent = '現在地を取得中です…';
     loc.disabled = true;
     loc.textContent = '取得中…';
+    watchHadError = false;
+    watchStartedAt = Date.now();
     watchId = navigator.geolocation.watchPosition(
       position => showPosition(position), onError,
       { enableHighAccuracy: true, maximumAge: 0, timeout: 20000 }
@@ -157,6 +171,13 @@
   }
 
   window.KPMAPLocation = { request: requestLocation, getLatest: () => latest };
+  document.addEventListener('visibilitychange', () => {
+    // Resuming a suspended page may leave an old watch registered but silent.
+    // Permission-denied watches are null and are never retried automatically.
+    if (document.hidden || watchId === null || Date.now() - (latest?.timestamp || watchStartedAt) <= 30000) return;
+    navigator.geolocation.clearWatch(watchId); watchId = null;
+    requestLocation(false);
+  });
   loc.onclick = () => requestLocation(true);
   const recenterControl = L.control({ position: 'topleft' });
   recenterControl.onAdd = () => {

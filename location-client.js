@@ -25,30 +25,8 @@
     return 12742 * Math.asin(Math.sqrt(h));
   }
 
-  function nearestOnRoute(route, point) {
-    let best = null;
-    const cos = Math.cos(point[0] * Math.PI / 180);
-    for (const line of route.segs || []) for (let i = 1; i < line.length; i++) {
-      const a = line[i - 1], b = line[i];
-      const ax = (a[1] - point[1]) * cos, ay = a[0] - point[0];
-      const bx = (b[1] - point[1]) * cos, by = b[0] - point[0];
-      const dx = bx - ax, dy = by - ay, den = dx * dx + dy * dy;
-      const t = den ? Math.max(0, Math.min(1, -(ax * dx + ay * dy) / den)) : 0;
-      const ll = [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
-      const distance = distanceKm(point, ll);
-      if (!best || distance < best.distance) best = { point: ll, distance };
-    }
-    return best;
-  }
-
-  function nearestKp(route, point) {
-    let best = null;
-    for (const mark of route.marks || []) {
-      const distance = distanceKm(point, [mark[1], mark[2]]);
-      if (!best || distance < best.distance) best = { value: mark[0], distance };
-    }
-    return best;
-  }
+  const nearestOnRoute = KPMAPSpatial.nearestOnRoute;
+  const nearestKp = KPMAPSpatial.nearestKp;
 
   function bearing(a, b) {
     const rad = n => n * Math.PI / 180;
@@ -58,23 +36,20 @@
     ) * 180 / Math.PI + 360) % 360;
   }
 
-  function increasingKpBearing(route, point) {
-    const marks = (route.marks || []).slice().sort((a, b) => a[0] - b[0]);
+  function increasingKpBearing(route, point, nearest) {
+    const marks = KPMAPSpatial.sortedMarks(route);
     if (marks.length < 2) return null;
-    let nearestIndex = 0, nearestDistance = Infinity;
-    marks.forEach((mark, index) => {
-      const d = distanceKm(point, [mark[1], mark[2]]);
-      if (d < nearestDistance) { nearestDistance = d; nearestIndex = index; }
-    });
+    const nearestIndex = (nearest || nearestKp(route, point))?.index;
+    if (!Number.isInteger(nearestIndex)) return null;
     const lower = marks[Math.max(0, nearestIndex - 1)];
     const upper = marks[Math.min(marks.length - 1, nearestIndex + 1)];
     return lower === upper ? null : bearing([lower[1], lower[2]], [upper[1], upper[2]]);
   }
 
-  function getTravelDirection(routeKey, route, point, heading, detailHeadingSource) {
+  function getTravelDirection(routeKey, route, point, heading, detailHeadingSource, nearest) {
     if (!Number.isFinite(heading)) return { text: '取得できません', note: '40km/h以上で30秒以上の走行をGPSで確認すると判定します。歩行中のGPSは判定に使いません。' };
     if (!(routeKey in directionRules)) return { text: '判定対象外', note: 'この路線は上り・下りの自動判定に対応していません。' };
-    const routeBearing = increasingKpBearing(route, point);
+    const routeBearing = increasingKpBearing(route, point, nearest);
     if (!Number.isFinite(routeBearing)) return { text: '判定できません', note: '道路の方向を確認できませんでした。' };
     const delta = Math.abs(((heading - routeBearing + 540) % 360) - 180);
     if (Math.abs(delta - 90) < 35) return { text: '判定できません', note: 'GPSの進行方向が道路の向きと合わないため、方向を判定できませんでした。' };
@@ -87,6 +62,7 @@
 
   function locate(detail) {
     const point = [Number(detail.lat), Number(detail.lng)];
+    if (!point.every(Number.isFinite) || Math.abs(point[0]) > 90 || Math.abs(point[1]) > 180) return;
     const routes = routeKeys.map(key => ({ key, route: routesData[key], closest: routesData[key] && nearestOnRoute(routesData[key], point) }))
       .filter(item => item.route && item.closest).sort((a, b) => a.closest.distance - b.closest.distance);
     if (!routes.length) {
@@ -104,7 +80,7 @@
     }
     const roadPoint = match.closest.point || point;
     const nearest = nearestKp(match.route, roadPoint);
-    const direction = detail.directionStatus === 'judging' ? { text: '判定中', note: '40km/h以上の走行を30秒間確認しています。' } : getTravelDirection(match.key, match.route, roadPoint, Number.isFinite(detail.heading) ? detail.heading : NaN, detail.headingSource);
+    const direction = detail.directionStatus === 'judging' ? { text: '判定中', note: '40km/h以上の走行を30秒間確認しています。' } : getTravelDirection(match.key, match.route, roadPoint, Number.isFinite(detail.heading) ? detail.heading : NaN, detail.headingSource, nearest);
     window.dispatchEvent(new CustomEvent('kpmap-road-location', {detail:{routeKey:match.key,kp:nearest?.value,direction:direction.text,roadDistance:match.closest.distance}}));
     roadEl.textContent = match.route.name;
     showDirection(direction.text);

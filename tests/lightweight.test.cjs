@@ -1,7 +1,7 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs'), vm = require('node:vm');
 const keys = ['sanyo','chugoku','hiroshima','hiroshima_iwakuni'];
-const data = JSON.parse(fs.readFileSync('dist/index.html','utf8').match(/const D=(.*?),\$=x=>/s)[1]);
+const data = require('./read-route-data.cjs')();
 assert.deepEqual(Object.keys(data).sort(),keys.slice().sort());
 const context = {window:{}};
 vm.runInNewContext(fs.readFileSync('dist/traffic-landmarks.js','utf8'),context);

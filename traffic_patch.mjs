@@ -34,11 +34,12 @@ const locationPanel = '<section class="location-panel" id="locationPanel" aria-l
 if (!html.includes('id="locationPanel"')) html = html.replace(mapAnchor, mapAnchor + locationPanel + panel);
 const scriptAnchor = '</body>';
 if (!html.includes(scriptAnchor)) throw new Error('traffic script insertion point not found');
-html = html.replace(scriptAnchor, '<script src="/traffic-landmarks.js"></script><script src="/traffic-location.js"></script><script src="/traffic-presentation.js"></script><script src="/traffic-client.js"></script><script src="/location-client.js"></script><script src="/location-quality.js"></script><script src="/location-ui.js"></script><script src="/map-controls.js"></script>' + scriptAnchor);
+html = html.replace(scriptAnchor, '<script src="/traffic-landmarks.js"></script><script src="/traffic-location.js"></script><script src="/traffic-presentation.js"></script><script src="/traffic-client.js"></script><script src="/map-spatial.js"></script><script src="/location-client.js"></script><script src="/location-quality.js"></script><script src="/location-ui.js"></script><script src="/map-controls.js"></script>' + scriptAnchor);
 fs.copyFileSync('traffic-client.js', 'dist/traffic-client.js');
 fs.copyFileSync('traffic-location.js', 'dist/traffic-location.js');
 fs.writeFileSync('dist/traffic-landmarks.js', 'window.KPMAP_TRAFFIC_LANDMARKS=' + fs.readFileSync('traffic-landmarks.json', 'utf8') + ';');
 fs.copyFileSync('location-client.js', 'dist/location-client.js');
+fs.copyFileSync('map-spatial.js', 'dist/map-spatial.js');
 fs.copyFileSync('location-ui.js', 'dist/location-ui.js');
 for (const script of ['traffic-presentation.js', 'location-quality.js', 'map-controls.js', 'map-rotation-compat.js']) fs.copyFileSync(script, 'dist/' + script);
 fs.mkdirSync('dist/vendor', { recursive: true });

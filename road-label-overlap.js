@@ -12,7 +12,7 @@
   if (!ctx || !ink) { canvas.remove(); return; }
   const labelSelector = '.kplabel,.facility .fname,.facility .dot,.detail-label,' +
     '.traffic-event-marker,.traffic-cluster-count,.traffic-map-new';
-  let frame = 0, moving = false, geometryDirty = true, projected = [];
+  let frame = 0, moving = false, geometryDirty = true, inkDirty = true, projected = [];
 
   function projectRoads() {
     const colors = new Set(Object.values(D).map(route => route.color));
@@ -29,7 +29,7 @@
       }
       part(line.getLatLngs());
     });
-    geometryDirty = false;
+    geometryDirty = false; inkDirty = true;
   }
 
   function draw() {
@@ -54,6 +54,7 @@
         rect.left < bounds.right && rect.bottom > bounds.top && rect.top < bounds.bottom);
     if (!rectangles.length) return;
     if (geometryDirty) projectRoads();
+    if (inkDirty) {
     ink.setTransform(1, 0, 0, 1, 0, 0);
     ink.clearRect(0, 0, width, height);
     ink.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -66,6 +67,8 @@
         else ink.lineTo(point.x, point.y);
       });
       ink.stroke();
+    }
+      inkDirty = false;
     }
     ctx.save();
     ctx.beginPath();
@@ -85,8 +88,15 @@
   for (const group of [roads, sel]) group.on('layeradd layerremove', () => {
     geometryDirty = true; schedule();
   });
+  const hasLabel = node => node?.nodeType === 1 &&
+    (node.matches(labelSelector) || node.querySelector(labelSelector));
   const observer = new MutationObserver(records => {
-    if (records.some(record => record.target !== canvas)) schedule();
+    // GPS arrows, accuracy circles and compass tags do not cover road labels.
+    // Ignore their frequent transforms; map movement has its own invalidation.
+    if (records.some(record => record.target !== canvas && (
+      record.type === 'attributes' ? hasLabel(record.target) :
+      [...record.addedNodes, ...record.removedNodes].some(hasLabel)
+    ))) schedule();
   });
   observer.observe(container, { childList: true, subtree: true, attributes: true,
     attributeFilter: ['style', 'class'] });

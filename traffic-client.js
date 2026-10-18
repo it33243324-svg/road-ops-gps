@@ -141,16 +141,9 @@
     const scale = map.getZoom() < 13 ? .75 : map.getZoom() < 15 ? .875 : 1;
     const size = Math.round(32 * scale);
     // Group nearby screen anchors; zooming in naturally separates distinct locations.
-    const groups = [];
     for (const event of trafficData) event.mapMarker = null;
-    for (const event of trafficData.filter(e=>e.mapPoint).sort((a,b)=>mapRank(a)-mapRank(b))) {
-      const point = map.latLngToContainerPoint(event.mapPoint);
-      const group = groups.find(events=>{
-        const anchor=map.latLngToContainerPoint(events[0].mapPoint);
-        return Math.abs(anchor.x-point.x)<size+12 && Math.abs(anchor.y-point.y)<size+12;
-      });
-      if (group) group.push(event); else groups.push([event]);
-    }
+    const groups = KPMAPTrafficPresentation.screenGroups(trafficData,
+      point => map.latLngToContainerPoint(point), size + 12);
     for (const events of groups) {
       const event = events[0];
       const rank = mapRank(event), pane = 'trafficPriority' + rank;
@@ -256,11 +249,14 @@
     busy = true;
     refresh.disabled = true;
     refresh.textContent = '取得中…';
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 20000);
     try {
-      const response = await fetch('/api/traffic?ts=' + Date.now(), { cache: 'no-store' });
+      const response = await fetch('/api/traffic?ts=' + Date.now(), { cache: 'no-store', signal: controller.signal });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || '取得エラー');
-      const events = (Array.isArray(data.events) ? data.events : []).filter(event => ['山陽道','中国道','広島道','広島岩国道路'].includes(String(event.road || '').trim()));
+      if (!response.ok) throw new Error(data?.error || '取得エラー');
+      if (!Array.isArray(data?.events)) throw new Error('交通情報の形式が正しくありません');
+      const events = data.events.filter(event => event && typeof event === 'object' && ['山陽道','中国道','広島道','広島岩国道路'].includes(String(event.road || '').trim()));
       const signature = JSON.stringify(events);
       const changed = signature !== dataSignature;
       if (changed) trafficData = events;
@@ -281,6 +277,7 @@
       meta.textContent = '更新に失敗しました。前回取得した情報を表示しています。';
       if (updated) updated.classList.add('is-stale');
     } finally {
+      clearTimeout(timeout);
       busy = false;
       refresh.disabled = false;
       refresh.textContent = '更新';

@@ -15,3 +15,17 @@ assert.equal(p.eventAge('2026-10-03T02:00:00Z',Date.parse('2026-10-03T01:07:00Z'
 console.log('PASS: priority sections sorted by distance, pane ranking, radius and occurrence-time semantics');
 
 assert(p.isClosure({category:'ramp',detail:'入口閉鎖'}));assert(!p.isClosure({category:'ramp',detail:'車線規制'}));assert.equal(p.mapRank({category:'ramp',detail:'出口閉鎖',reason:'工事'}),0);
+
+// Preserve the exact clustering order while projecting every event only once.
+const {screenGroups,mapRank}=require('../traffic-presentation.js');
+const dense=Array.from({length:500},(_,i)=>({category:['closed','accident','broken','falling','jam','underRegulation'][i%6],mapPoint:[Math.floor(i/25)*8,(i%25)*9],id:i}));
+const expected=[];let oldCalls=0,newCalls=0;
+const project=p=>({x:p[0],y:p[1]});
+for(const event of dense.slice().sort((a,b)=>mapRank(a)-mapRank(b))){
+ const p=project(event.mapPoint);oldCalls++;
+ const hit=expected.find(g=>{const a=project(g[0].mapPoint);oldCalls++;return Math.abs(a.x-p.x)<44&&Math.abs(a.y-p.y)<44;});
+ if(hit)hit.push(event);else expected.push([event]);
+}
+const actual=screenGroups(dense,p=>{newCalls++;return project(p);},44);
+assert.deepEqual(actual,expected);assert.equal(newCalls,dense.length);assert(oldCalls>newCalls*5);
+console.log('PASS: unchanged 500-event icon grouping with '+oldCalls+' -> '+newCalls+' screen projections');

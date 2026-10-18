@@ -19,7 +19,7 @@ function collectGroups(bucket, output) {
         const title = String(event.title || '').trim();
         if (!title || !DISPLAY_ROADS.has(String(road.roadName || '').trim())) continue;
         const coordinates = Array.isArray(event.coordinate) ? event.coordinate : event.coordinate ? [event.coordinate] : [];
-        const points = coordinates.map(c => ({
+        const points = coordinates.filter(c => c && typeof c === 'object').map(c => ({
           x: ((Number(c.startX) || 0) + (Number(c.endX) || Number(c.startX) || 0)) / 2,
           y: ((Number(c.startY) || 0) + (Number(c.endY) || Number(c.startY) || 0)) / 2
         })).filter(c => Number.isFinite(c.x) && Number.isFinite(c.y) && (c.x !== 0 || c.y !== 0));

@@ -10,10 +10,19 @@
       if(!best||d<best.distance)best={kp:a[0]+(b[0]-a[0])*t,distance:d};
     }return best;
   }
+  const routeCache=new WeakMap();
+  function facilityProjections(route){
+    const previous=routeCache.get(route);
+    if(previous&&previous.sourceMarks===route.marks&&previous.sourceFacilities===route.facilities)return previous.entries;
+    const marks=(route.marks||[]).slice().sort((a,b)=>a[0]-b[0]);
+    const entries=(route.facilities||[]).map(f=>({facility:f,projection:projectKp(marks,[f.lat,f.lng])})).filter(x=>x.projection&&x.projection.distance<=2);
+    routeCache.set(route,{sourceMarks:route.marks,sourceFacilities:route.facilities,entries});
+    return entries;
+  }
   function next(route,currentKp,direction){
-    if(!['上り','下り'].includes(direction))return [];
-    const marks=(route.marks||[]).slice().sort((a,b)=>a[0]-b[0]),sign=direction==='下り'?1:-1;
-    const candidates=(route.facilities||[]).map(f=>({facility:f,projection:projectKp(marks,[f.lat,f.lng])})).filter(x=>x.projection&&x.projection.distance<=2)
+    if(!route||!Number.isFinite(currentKp)||!['上り','下り'].includes(direction))return [];
+    const sign=direction==='下り'?1:-1;
+    const candidates=facilityProjections(route)
       .map(x=>({...x,distance:(x.projection.kp-currentKp)*sign})).filter(x=>x.distance>.15).sort((a,b)=>a.distance-b.distance);
     const results=[];
     for(const group of [['IC','SIC'],['PA','SA']]){
@@ -26,8 +35,11 @@
   if(typeof document==='undefined')return;
   const panel=document.createElement('aside');panel.className='next-facilities';panel.setAttribute('aria-label','進行方向の次のIC・PA');panel.innerHTML='<strong>次のIC・PA</strong><span>現在地・進行方向を確認すると表示</span>';
   document.querySelector('.mapactions').appendChild(panel);
+  let panelSignature=null;
   window.addEventListener('kpmap-road-location',event=>{
     const d=event.detail;
+    const signature=JSON.stringify([d.routeKey,d.kp,d.direction,d.roadDistance>.5]);
+    if(signature===panelSignature)return;panelSignature=signature;
     panel.replaceChildren();const title=document.createElement('strong');title.textContent='次のIC・PA';panel.appendChild(title);
     const text=document.createElement('span');panel.appendChild(text);
     if(d.roadDistance>.5){text.textContent='高速道路上で表示します';return;}
@@ -37,5 +49,5 @@
     for(const x of list){const item=document.createElement('span');item.className='next-facility-item';item.textContent=x.kinds.join(' / ')+'：'+x.facility.name+'  約'+x.distance.toFixed(1)+'km';item.title='現在地KPと施設付近の推定KPとの差。参考距離です。';panel.appendChild(item);}
     if(!list.length)text.textContent+=' ・ 前方の施設データなし';
   });
-  window.addEventListener('kpmap-location-error',()=>{panel.innerHTML='<strong>次のIC・PA</strong><span>現在地・進行方向の取得待ち</span>';});
+  window.addEventListener('kpmap-location-error',()=>{panelSignature=null;panel.innerHTML='<strong>次のIC・PA</strong><span>現在地・進行方向の取得待ち</span>';});
 })(typeof window!=='undefined'?window:globalThis);

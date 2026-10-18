@@ -1,9 +1,10 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import readRoutes from './read-route-data.cjs';
 import { auditKpRoutes, calibrateKp } from '../kp-calibration.mjs';
 
 const html = fs.readFileSync(process.argv[2] || 'dist/index.html', 'utf8');
-const routes = JSON.parse(html.match(/const D=(.*?),\$=x=>/)[1]);
+const routes = readRoutes(process.argv[2] || 'dist/index.html');
 const anchors = JSON.parse(fs.readFileSync('kp-ledger-anchors.json'));
 const report = JSON.parse(fs.readFileSync('dist/kp-calibration-report.json'));
 const audited = auditKpRoutes(routes);
