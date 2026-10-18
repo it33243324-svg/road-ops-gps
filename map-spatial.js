@@ -92,7 +92,24 @@
     return nearest(tree, point, ({ mark, index }) => ({ value: mark[0], index,
       distance: distanceKm(point, [mark[1], mark[2]]) }));
   }
-  const api = { nearestOnRoute, nearestKp, sortedMarks: route => marksFor(route).marks };
+  // Exact inclusive rectangle lookup, reusing the same index as nearest KP.
+  // Return KP order so label insertion and overlap behavior stay deterministic.
+  function marksInBounds(route, bounds) {
+    if (!bounds || !['south', 'north', 'west', 'east'].every(key => Number.isFinite(bounds[key]))) return [];
+    const {south, north, west, east} = bounds;
+    if (south > north || west > east) return [];
+    const found = [];
+    function visit(node) {
+      if (!node || node.north < south || node.south > north || node.east < west || node.west > east) return;
+      if (node.items) {
+        for (const item of node.items) if (item.south >= south && item.north <= north && item.west >= west && item.east <= east) found.push(item);
+      } else { visit(node.left); visit(node.right); }
+    }
+    visit(marksFor(route).tree);
+    found.sort((a, b) => a.index - b.index);
+    return found.map(item => item.mark);
+  }
+  const api = { nearestOnRoute, nearestKp, marksInBounds, sortedMarks: route => marksFor(route).marks };
   root.KPMAPSpatial = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);
