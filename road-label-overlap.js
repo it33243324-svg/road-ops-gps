@@ -16,6 +16,11 @@
 
   function projectRoads() {
     const colors = new Set(Object.values(D).map(route => route.color));
+    // Conservative segment bounds retain crossings even when both endpoints
+    // lie outside the screen. No simplification of the actual road geometry.
+    const viewport = map.getBounds().pad(.2);
+    const south = viewport.getSouth(), north = viewport.getNorth();
+    const west = viewport.getWest(), east = viewport.getEast();
     projected = [];
     // Paint selected strokes last into an opaque buffer, avoiding double alpha
     // where the selected and ordinary road layers cover the same geometry.
@@ -24,8 +29,22 @@
       function part(points) {
         if (!points.length) return;
         if (Array.isArray(points[0])) { points.forEach(part); return; }
-        projected.push({ color: line.options.color, weight: line.options.weight,
-          points: points.map(point => map.latLngToContainerPoint(point)) });
+        let run = [], previous = null;
+        const flush = () => {
+          if (run.length > 1) projected.push({color: line.options.color,
+            weight: line.options.weight, points: run});
+          run = []; previous = null;
+        };
+        for (let i = 1; i < points.length; i++) {
+          const a = points[i - 1], b = points[i];
+          if (Math.max(a.lat,b.lat) < south || Math.min(a.lat,b.lat) > north ||
+              Math.max(a.lng,b.lng) < west || Math.min(a.lng,b.lng) > east) {
+            flush(); continue;
+          }
+          if (previous !== a) run.push(map.latLngToContainerPoint(a));
+          run.push(map.latLngToContainerPoint(b)); previous = b;
+        }
+        flush();
       }
       part(line.getLatLngs());
     });

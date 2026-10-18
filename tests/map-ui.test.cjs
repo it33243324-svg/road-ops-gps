@@ -91,7 +91,10 @@ async function main(){
  assert(doc.querySelectorAll('.traffic-event-marker').length<=expectedMarkers,'Nearby events can share markers');assert.equal(doc.querySelectorAll('.traffic-anchor-line').length,0,'Offset connector lines are removed');
  assert.equal([...doc.querySelectorAll('.traffic-event-marker')].reduce((n,e)=>n+(Number(e.querySelector('.traffic-cluster-count')?.textContent)||1),0),32,'All records are retained in visible counts');
  assert(doc.querySelector('.traffic-cluster-count'),'Equal coordinates have a visible count');
- assert.equal(doc.querySelectorAll('.facility').length,135,'Existing four-route facility labels must remain');
+ assert.equal(Object.values(routeData).reduce((n,v)=>n+v.facilities.length,0),135,'All four-route facility records remain available');
+ const facilityLayers=w.eval('[...facilityMarkers.values()]');
+ for(const v of Object.values(routeData))for(const f of v.facilities)if(map.getBounds().contains([f.lat,f.lng]))assert(facilityLayers.some(m=>m.getLatLng().lat===f.lat&&m.getLatLng().lng===f.lng),'Every in-view facility remains rendered');
+ assert(doc.querySelectorAll('.facility').length<135,'Distant offscreen facilities are not mounted');
  assert(doc.querySelector('#trafficUpdated').textContent.includes('更新（取得時刻）'));
  assert.equal(doc.querySelectorAll('.traffic-age').length,0,'Fetch time must never be displayed as event age');
  assert(gpsOptions.enableHighAccuracy&&gpsOptions.maximumAge===0);
