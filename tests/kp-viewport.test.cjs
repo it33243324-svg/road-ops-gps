@@ -11,7 +11,7 @@ const wait=ms=>new Promise(r=>setTimeout(r,ms));
 (async()=>{const a=await create('dist',{width:390,height:844}),w=a.window,m=a.map,D=w.eval('D');let views=0;
  for(const [key,route]of Object.entries(D)){const selected=route.marks[Math.floor(route.marks.length*.53)];w.__chosen=selected;w.eval('pickedKp=[...window.__chosen.slice(1),window.__chosen[0]]');
   for(const z of [9,10.1,12,14,16,18]){m.setView([selected[1],selected[2]],z,{animate:false});await wait(35);const bounds=m.getBounds().pad(.5),density=w.eval('step')();
-   for(const road of Object.keys(D)){const old=w.eval('kpRows')(road,density).filter(x=>bounds.contains([x[1],x[2]])),next=w.eval('kpRowsInBounds')(road,density,bounds);assert.deepEqual(Array.from(next,x=>Array.from(x)),Array.from(old,x=>Array.from(x)),'Exact selected-KP and density order must match full scans');views++;}
+   for(const road of Object.keys(D)){const old=w.eval('kpRows')(road,density).filter(x=>bounds.contains([x[1],x[2]])),next=w.eval('kpCandidates')(road,density,bounds).filter(x=>bounds.contains([x[1],x[2]]));assert.deepEqual(Array.from(next,x=>Array.from(x)),Array.from(old,x=>Array.from(x)),'Exact selected-KP and density order must match full scans');views++;}
   }
  }
  assert.deepEqual(a.errors,[]);a.close();console.log('PASS: '+count+' inclusive viewport index/full-scan comparisons and '+views+' actual label candidate/order comparisons, selected KP, index replacement and invalid bounds');})().catch(e=>{console.error(e);process.exit(1)});

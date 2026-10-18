@@ -1,12 +1,13 @@
 // Real-time stress of Leaflet's pinch lifecycle; this measures correctness and
 // bounded DOM/cache behavior, not hardware touch latency or GPU frame rate.
-const assert=require('node:assert/strict'),fs=require('node:fs'),create=require('./app-harness.cjs');
+const assert=require('node:assert/strict'),fs=require('node:fs'),create=require('./app-harness.cjs'),crypto=require('node:crypto');
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
 (async()=>{
  const deadline=Number(process.argv[2]||Date.now()+50*60000),out=process.argv[3]||'/tmp/kpmap-zoom-soak.json',apps=[],records=[],start=Date.now();
  for(const [key,width,height] of [['sanyo',390,844],['chugoku',844,390],['hiroshima',375,812],['hiroshima_iwakuni',1280,900]]){
   const a=await create('dist',{width,height});a.key=key;a.D=a.window.eval('D');const select=a.window.document.querySelector('#r');select.value=key;select.dispatchEvent(new a.window.Event('change'));apps.push(a);
  }
+ const buildSha256=crypto.createHash('sha256').update(fs.readFileSync('dist/index.html')).digest('hex');
  let cycles=0,gestures=0,frames=0;
  while(Date.now()<deadline){
   const due=start+(cycles+1)*5000;
@@ -25,8 +26,8 @@ const wait=ms=>new Promise(r=>setTimeout(r,ms));
    assert.deepEqual(a.errors,[]);assert(Number.isFinite(w.KPMAPLocation.getLatest().point[0]));
   }
   cycles++;
-  if(cycles%12===0){const record={seconds:Math.round((Date.now()-start)/1000),cycles,gestures,frames,heapMB:Math.round(process.memoryUsage().heapUsed/1048576),apps:apps.map(a=>({road:a.key,nodes:a.window.document.querySelectorAll('*').length,errors:a.errors.length}))};records.push(record);fs.writeFileSync(out,JSON.stringify({status:'running',start,deadline,records},null,2));console.log(JSON.stringify(record));}
+  if(cycles%12===0){const record={seconds:Math.round((Date.now()-start)/1000),cycles,gestures,frames,heapMB:Math.round(process.memoryUsage().heapUsed/1048576),apps:apps.map(a=>({road:a.key,nodes:a.window.document.querySelectorAll('*').length,errors:a.errors.length}))};records.push(record);fs.writeFileSync(out,JSON.stringify({status:'running',start,deadline,buildSha256,records},null,2));console.log(JSON.stringify(record));}
   await wait(Math.max(0,Math.min(due,deadline)-Date.now()));
  }
- const result={status:'passed',start,end:Date.now(),elapsedSeconds:(Date.now()-start)/1000,cycles,gestures,frames,records};fs.writeFileSync(out,JSON.stringify(result,null,2));console.log(JSON.stringify({...result,records:records.length}));apps.forEach(a=>a.close());
+ const result={status:'passed',buildSha256,start,end:Date.now(),elapsedSeconds:(Date.now()-start)/1000,cycles,gestures,frames,records};fs.writeFileSync(out,JSON.stringify(result,null,2));console.log(JSON.stringify({...result,records:records.length}));apps.forEach(a=>a.close());
 })().catch(e=>{console.error(e);process.exit(1)});
