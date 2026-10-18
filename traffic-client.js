@@ -120,6 +120,7 @@
     return true;
   }
   function renderMap() {
+    const popupEvent = trafficData.find(event => event.mapMarker?.isPopupOpen?.());
     const uprightPane = map.getPane('markerPane').parentElement;
     const kpPane = map.getPane('kpPane');
     if (kpPane && kpPane.parentElement !== uprightPane) uprightPane.appendChild(kpPane);
@@ -167,6 +168,7 @@
       marker.addTo(trafficLayer);
       events.forEach(e=>{e.mapMarker = marker;});
     }
+    if (popupEvent?.mapMarker) popupEvent.mapMarker.openPopup();
     refreshBadges();
     map.fire("trafficrendered");
     updateMapMeta();
@@ -195,8 +197,8 @@
   list.addEventListener('click', event => {
     const card = event.target.closest('[data-event]');
     if (!card || !list.contains(card)) return;
-    const item = listEvents[Number(card.dataset.event)];
-    if (!item) return;
+    const item = listEvents[Number(card.dataset.event)]?.event;
+    if (!item?.mapPoint) return;
     window.dispatchEvent(new CustomEvent('kpmap-browse-map'));
     map.setView(item.mapPoint, Math.max(map.getZoom(), 14));
     if (item.mapMarker) item.mapMarker.openPopup();
