@@ -8,25 +8,28 @@
     .kpmap-render-paused *,.kpmap-render-paused::before,
     .kpmap-render-paused::after,.kpmap-render-paused *::before,
     .kpmap-render-paused *::after{animation-play-state:paused!important}
-    body.kpmap-map-dragging .kpmap-brand span,
-    body.kpmap-map-dragging :is(#go,#gmap,.gmap-selected-action),
-    body.kpmap-map-dragging :is(#go,#gmap,.gmap-selected-action)::before,
-    body.kpmap-map-dragging :is(#go,#gmap,.gmap-selected-action)::after,
-    body.kpmap-map-dragging .location-wave,
-    body.kpmap-map-dragging .map-fullscreen-shortcut::before,
-    body.kpmap-map-dragging .map-fullscreen-shortcut::after{animation-play-state:paused!important}
+    body:is(.kpmap-map-dragging,.kpmap-map-zooming) .kpmap-brand span,
+    body:is(.kpmap-map-dragging,.kpmap-map-zooming) :is(#go,#gmap,.gmap-selected-action),
+    body:is(.kpmap-map-dragging,.kpmap-map-zooming) :is(#go,#gmap,.gmap-selected-action)::before,
+    body:is(.kpmap-map-dragging,.kpmap-map-zooming) :is(#go,#gmap,.gmap-selected-action)::after,
+    body:is(.kpmap-map-dragging,.kpmap-map-zooming) .location-wave,
+    body:is(.kpmap-map-dragging,.kpmap-map-zooming) .map-fullscreen-shortcut::before,
+    body:is(.kpmap-map-dragging,.kpmap-map-zooming) .map-fullscreen-shortcut::after{animation-play-state:paused!important}
   `;
   document.head.appendChild(style);
   const endDrag = () => document.body?.classList.remove('kpmap-map-dragging');
   map.on('dragstart', () => document.body?.classList.add('kpmap-map-dragging'));
   map.on('moveend zoomend', endDrag);
+  const endZoom = () => document.body?.classList.remove('kpmap-map-zooming');
+  map.on('zoomstart', () => document.body?.classList.add('kpmap-map-zooming'));
+  map.on('zoomend', endZoom);
   const sync = () => {
     document.documentElement.classList.toggle('kpmap-document-hidden', document.hidden);
-    if (document.hidden) endDrag();
+    if (document.hidden) {endDrag();endZoom();}
   };
   document.addEventListener('visibilitychange', sync); sync();
   let observer = null;
-  map.on('unload', () => {observer?.disconnect();endDrag();document.removeEventListener('visibilitychange', sync);});
+  map.on('unload', () => {observer?.disconnect();endDrag();endZoom();document.removeEventListener('visibilitychange', sync);});
   // Old browsers retain the normal effects rather than hiding information.
   if (!window.IntersectionObserver) return;
   observer = new IntersectionObserver(entries => {

@@ -38,9 +38,10 @@
     return (routeByName[road] === r.value ? 14 : 11) + (z >= 16 ? 3 : z >= 14 ? 1.5 : 0);
   }
   function updateIntervalWidths() {
-    intervalLayer?.eachLayer(line => line.setStyle({
-      weight: intervalWidth(line.options.trafficRoad) + (line.options.intervalEdge ? 3 : 0)
-    }));
+    intervalLayer?.eachLayer(line => {
+      const weight = intervalWidth(line.options.trafficRoad) + (line.options.intervalEdge ? 3 : 0);
+      if (line.options.weight !== weight) line.setStyle({weight});
+    });
   }
   map.on('zoomend', updateIntervalWidths);
   r.addEventListener('change', updateIntervalWidths);
