@@ -97,8 +97,10 @@
     }
     for(const [item,entry]of markers)if(!wanted.has(item)){layer.removeLayer(entry.marker);markers.delete(item);}
   }
-  let frame=0;function schedule(){if(frame)return;frame=requestAnimationFrame(()=>{frame=0;draw()});}
-  map.on('moveend zoomend rotate',schedule);
+  let frame=0,moving=false;
+  function schedule(){if(frame||moving)return;frame=requestAnimationFrame(()=>{frame=0;if(!moving)draw()});}
+  map.on('movestart',()=>{moving=true;if(frame){cancelAnimationFrame(frame);frame=0;}});
+  map.on('moveend zoomend rotate',event=>{if(event?.type!=='rotate')moving=false;schedule();});
   const observer=new MutationObserver(schedule);
   // Traffic updates and KP selection can change overlap without moving the map.
   for(const name of ['kpPane','selectedKpPane','trafficPriority0','trafficPriority1','trafficPriority2','trafficPriority3','trafficPriority4','trafficPriority5']){
