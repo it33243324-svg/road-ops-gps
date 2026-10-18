@@ -135,7 +135,7 @@
   let rotateLabels = 0;
   map.on('rotate', () => {
     clearTimeout(rotateLabels);
-    rotateLabels = setTimeout(labels, 180);
+    rotateLabels = setTimeout(scheduleVisibleLabels, 180);
   });
   const last = KPMAPLocation.getLatest();
   if (last) latest = last;
